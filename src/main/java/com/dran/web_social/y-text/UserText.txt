@@ -1,0 +1,6 @@
+avatar sẽ dùng aws s3
+dùng email để xác thực
+
+auth sẽ để đăng ký đăng nhập, xác thực
+
+user sẽ để thông tin user, chỉnh sửa
