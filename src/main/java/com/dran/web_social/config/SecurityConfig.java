@@ -11,12 +11,15 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
+import java.io.IOException;
 import java.util.Collections;
 
 @Configuration
@@ -25,12 +28,16 @@ import java.util.Collections;
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
     private final String[] WHITE_LIST = {
-            "api/v1/auth/**"
+            "/api/v1/auth/**",
+            "/oauth2/**",
+            "/login/**"
     };
 
     private final String[] BLACK_LIST = {
-            "api/v1/roles/**"
+            "/api/v1/roles/**"
     };
 
     @Bean
@@ -40,48 +47,46 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITE_LIST).permitAll()
-                        // .requestMatchers(WHITE_LIST).hasRole("USER")
                         .requestMatchers(BLACK_LIST).hasRole("ADMIN")
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(
-                        jwtAuthenticationEntryPoint));
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"error\": \"" + exception.getMessage() + "\"}");
+                        })
+                        .redirectionEndpoint(endpoint -> endpoint
+                                .baseUri("/api/v1/auth/google/callback")))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
     @Bean
-    // Mã hoá mật khẩu
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    // Cấu hình xác thực
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
             throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
-    // Cấu hình CORS
     public CorsConfigurationSource corsConfigurationSource() {
         return new CorsConfigurationSource() {
             @Override
-            // Lấy cấu hình CORS
             public CorsConfiguration getCorsConfiguration(@NonNull HttpServletRequest request) {
-                // Cấu hình CORS
                 CorsConfiguration cfg = new CorsConfiguration();
-                // Cho phép tất cả các nguồn
                 cfg.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
-                // Cho phép tất cả các phương thức
                 cfg.setAllowedMethods(Collections.singletonList("*"));
-                // Cho phép tất cả các header
                 cfg.setAllowedHeaders(Collections.singletonList("*"));
-                // Cho phép gửi credentials
                 cfg.setAllowCredentials(true);
-                // Cho phép hiển thị header Authorization
                 cfg.setExposedHeaders(Collections.singletonList("Authorization"));
-                // Thời gian tồn tại của CORS
                 cfg.setMaxAge(3600L);
                 return cfg;
             }

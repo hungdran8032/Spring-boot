@@ -6,8 +6,12 @@ import com.dran.web_social.dto.request.RegisterRequest;
 import com.dran.web_social.dto.response.AuthResponse;
 import com.dran.web_social.repositories.RefreshTokenRepository;
 import com.dran.web_social.services.AuthService;
+
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.io.IOException;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,5 +44,18 @@ public class AuthController {
         refreshTokenRepository.findByToken(request.getRefreshToken())
                 .ifPresent(refreshTokenRepository::delete);
         return ResponseEntity.ok("{\"message\": \"Logged out\"}");
+    }
+
+    @GetMapping("/google/login")
+    public void googleLogin(HttpServletResponse response) throws IOException {
+        response.sendRedirect("/oauth2/authorization/google");
+    }
+
+    @GetMapping("/google/callback")
+    public ResponseEntity<AuthResponse> googleCallback() {
+        // Phương thức này sẽ không được gọi trực tiếp vì OAuth2LoginSuccessHandler
+        // sẽ xử lý callback và trả về JSON
+        // Nhưng chúng ta cần định nghĩa nó để Spring Security biết endpoint này tồn tại
+        return ResponseEntity.ok(AuthResponse.builder().message("OAuth2 callback").build());
     }
 }
