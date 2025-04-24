@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -29,6 +30,7 @@ import com.dran.web_social.repositories.UserRoleRepository;
 import com.dran.web_social.services.AuthService;
 import com.dran.web_social.services.RoleService;
 import com.dran.web_social.services.UserService;
+import com.dran.web_social.utils.TokenType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -44,6 +46,9 @@ public class AuthServiceImpl implements AuthService {
         private final UserService userService;
         private final JwtConfig jwtConfig;
         private final AuthenticationManager authenticationManager;
+
+        @Value("${jwt.refresh.expiration}")
+        private long refreshTokenExpiration;
 
         @Override
         public AuthResponse register(RegisterRequest req) {
@@ -61,18 +66,21 @@ public class AuthServiceImpl implements AuthService {
                 Set<String> roles = user.getUserRoles().stream()
                                 .map(ur -> ur.getRole().getName())
                                 .collect(Collectors.toSet());
-                String token = jwtConfig.generateToken(user.getUsername(), roles);
-                String refreshToken = jwtConfig.generateRefreshToken(user.getUsername());
-
+                // String accessToken = jwtConfig.generateAccessToken(user.getUsername(),
+                // roles);
+                // String refreshToken = jwtConfig.generateRefreshToken(user.getUsername());
+                String accessToken = jwtConfig.generateToken(user.getUsername(), roles, TokenType.ACCESS_TOKEN);
+                String refreshToken = jwtConfig.generateToken(user.getUsername(), roles,
+                                TokenType.REFRESH_TOKEN);
                 // Lưu refresh token
                 RefreshToken refreshTokenEntity = RefreshToken.builder()
                                 .token(refreshToken)
-                                .expiryDate(Instant.now().plusMillis(7 * 86400000)) // 7 ngày
+                                .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 7 ngày
                                 .user(user)
                                 .build();
                 refreshTokenRepository.save(refreshTokenEntity);
                 AuthResponse response = userMapper.userToAuthResponse(user);
-                response.setToken(token);
+                response.setToken(accessToken);
                 response.setRefreshToken(refreshToken);
                 response.setUserName(user.getUsername());
                 return response;
@@ -92,15 +100,20 @@ public class AuthServiceImpl implements AuthService {
                 Set<String> roles = userDetails.getAuthorities().stream()
                                 .map(auth -> auth.getAuthority().replace("ROLE_", ""))
                                 .collect(Collectors.toSet());
-                String accessToken = jwtConfig.generateToken(userDetails.getUsername(), roles);
-                String refreshToken = jwtConfig.generateRefreshToken(userDetails.getUsername());
+                // String accessToken = jwtConfig.generateAccessToken(userDetails.getUsername(),
+                // roles);
+                // String refreshToken =
+                // jwtConfig.generateRefreshToken(userDetails.getUsername());
+                String accessToken = jwtConfig.generateToken(userDetails.getUsername(), roles, TokenType.ACCESS_TOKEN);
+                String refreshToken = jwtConfig.generateToken(userDetails.getUsername(), roles,
+                                TokenType.REFRESH_TOKEN);
 
                 // Lưu refresh token
                 User user = (User) userDetails;
                 refreshTokenRepository.deleteByUserId(user.getId()); // Xóa refresh token cũ
                 RefreshToken refreshTokenEntity = RefreshToken.builder()
                                 .token(refreshToken)
-                                .expiryDate(Instant.now().plusMillis(7 * 86400000)) // 7 ngày
+                                .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 7 ngày
                                 .user(user)
                                 .build();
                 refreshTokenRepository.save(refreshTokenEntity);
@@ -116,6 +129,7 @@ public class AuthServiceImpl implements AuthService {
         @Override
         public AuthResponse refreshToken(RefreshTokenRequest request) {
                 String refreshToken = request.getRefreshToken();
+
                 RefreshToken storedToken = refreshTokenRepository.findByToken(refreshToken)
                                 .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
 
@@ -128,14 +142,17 @@ public class AuthServiceImpl implements AuthService {
                 Set<String> roles = user.getUserRoles().stream()
                                 .map(ur -> ur.getRole().getName())
                                 .collect(Collectors.toSet());
-                String newAccessToken = jwtConfig.generateToken(user.getUsername(), roles);
-                String newRefreshToken = jwtConfig.generateRefreshToken(user.getUsername());
-
+                // String newAccessToken = jwtConfig.generateAccessToken(user.getUsername(),
+                // roles);
+                // String newRefreshToken = jwtConfig.generateRefreshToken(user.getUsername());
+                String newAccessToken = jwtConfig.generateToken(user.getUsername(), roles, TokenType.ACCESS_TOKEN);
+                String newRefreshToken = jwtConfig.generateToken(user.getUsername(), roles,
+                                TokenType.REFRESH_TOKEN);
                 // Xóa RT cũ, lưu RT mới
                 refreshTokenRepository.delete(storedToken);
                 RefreshToken newTokenEntity = RefreshToken.builder()
                                 .token(newRefreshToken)
-                                .expiryDate(Instant.now().plusMillis(10 * 60 * 1000)) // 10 phút
+                                .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 10 phút
                                 .user(user)
                                 .build();
                 refreshTokenRepository.save(newTokenEntity);

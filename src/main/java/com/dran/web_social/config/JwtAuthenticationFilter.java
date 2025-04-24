@@ -8,6 +8,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.dran.web_social.utils.TokenType;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,16 +36,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-            try {
-                username = jwtUtil.getUsernameFromToken(token);
-            } catch (Exception e) {
-                logger.warn("Invalid JWT token: " + e.getMessage());
-            }
+            username = jwtUtil.getUsernameFromToken(TokenType.ACCESS_TOKEN, token);
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (jwtUtil.validateToken(token, username)) {
+            // if (jwtUtil.validateAccessToken(token, username)) {
+            if (jwtUtil.validateToken(TokenType.ACCESS_TOKEN, token, username)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,

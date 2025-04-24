@@ -9,12 +9,15 @@ import com.dran.web_social.repositories.RefreshTokenRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.repositories.UserRoleRepository;
 import com.dran.web_social.services.RoleService;
+import com.dran.web_social.utils.TokenType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -41,6 +44,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtConfig jwtConfig;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Value("${jwt.refresh.expiration}")
+    private long refreshTokenExpiration;
 
     @Transactional
     @Override
@@ -111,14 +117,17 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                     .map(ur -> ur.getRole().getName())
                     .collect(Collectors.toSet());
 
-            String token = jwtConfig.generateToken(user.getUsername(), roles);
-            String refreshToken = jwtConfig.generateRefreshToken(user.getUsername());
-
+            // String accessToken = jwtConfig.generateAccessToken(user.getUsername(),
+            // roles);
+            // String refreshToken = jwtConfig.generateRefreshToken(user.getUsername());
+            String accessToken = jwtConfig.generateToken(user.getUsername(), roles, TokenType.ACCESS_TOKEN);
+            String refreshToken = jwtConfig.generateToken(user.getUsername(), roles,
+                    TokenType.REFRESH_TOKEN);
             // Lưu refresh token vào database
             refreshTokenRepository.deleteByUserId(user.getId()); // Xóa refresh token cũ nếu có
             RefreshToken refreshTokenEntity = RefreshToken.builder()
                     .token(refreshToken)
-                    .expiryDate(Instant.now().plusMillis(7 * 86400000)) // 7 ngày
+                    .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 7 ngày
                     .user(user)
                     .build();
             refreshTokenRepository.save(refreshTokenEntity);
@@ -127,7 +136,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             AuthResponse authResponse = AuthResponse.builder()
                     .message("Đăng nhập Google thành công")
                     .userName(user.getUsername())
-                    .token(token)
+                    .token(accessToken)
                     .refreshToken(refreshToken)
                     .build();
 
