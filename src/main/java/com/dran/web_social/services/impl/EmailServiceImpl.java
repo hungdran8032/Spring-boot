@@ -58,7 +58,7 @@ public class EmailServiceImpl implements EmailService {
     @Async
     public void sendPasswordResetEmail(User user, String token) {
         try {
-            String resetUrl = appUrl + "/api/v1/password/reset-password?token=" + token;
+            String resetUrl = appUrl + "/api/v1/password/reset?token=" + token;
 
             Context context = new Context();
             context.setVariable("name", user.getFirstName() != null ? user.getFirstName() : user.getUsername());
