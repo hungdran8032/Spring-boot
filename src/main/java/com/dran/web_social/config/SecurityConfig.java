@@ -31,7 +31,12 @@ public class SecurityConfig {
     private final String[] WHITE_LIST = {
             "/api/v1/auth/**",
             "/oauth2/**",
-            "/login/**"
+            "/login/**",
+            "/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/v3/api-docs/**",
+            "/api/v1/users/**"
     };
 
     private final String[] BLACK_LIST = {
@@ -81,6 +86,7 @@ public class SecurityConfig {
             public CorsConfiguration getCorsConfiguration(@NonNull HttpServletRequest request) {
                 CorsConfiguration cfg = new CorsConfiguration();
                 cfg.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
+                cfg.setAllowedOrigins(Collections.singletonList("http://localhost:9000"));
                 cfg.setAllowedMethods(Collections.singletonList("*"));
                 cfg.setAllowedHeaders(Collections.singletonList("*"));
                 cfg.setAllowCredentials(true);
