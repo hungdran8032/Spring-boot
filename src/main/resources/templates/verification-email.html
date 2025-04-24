@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác thực tài khoản Web Social</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Xác thực tài khoản Web Social</h2>
+        </div>
+
+        <p>Xin chào <span th:text="${name}">Người dùng</span>,</p>
+
+        <p>Cảm ơn bạn đã đăng ký tài khoản tại Web Social. Để hoàn tất quá trình đăng ký, vui lòng xác thực tài khoản
+            của bạn bằng cách nhấp vào nút bên dưới:</p>
+
+        <div style="text-align: center;">
+            <a th:href="${verificationUrl}" class="button">Xác thực tài khoản</a>
+        </div>
+
+        <p>Hoặc bạn có thể sao chép và dán liên kết sau vào trình duyệt của mình:</p>
+
+        <p style="word-break: break-all;"><span th:text="${verificationUrl}">https://example.com/verify</span></p>
+
+        <p>Liên kết này sẽ hết hạn sau 24 giờ. Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
+
+        <p>Trân trọng,<br>Đội ngũ Web Social</p>
+    </div>
+
+    <div class="footer">
+        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+        <p>&copy; 2025 Web Social. Tất cả các quyền được bảo lưu.</p>
+    </div>
+</body>
+
+</html>

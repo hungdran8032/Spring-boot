@@ -42,8 +42,8 @@ public class User extends BaseEntity implements UserDetails {
     private String gender;
     private Date birthDay;
 
-    private boolean enabled = true;
-    private boolean isVerified = false;
+    private boolean enabled;
+    private boolean isVerified;
 
     // reference to user_role
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)

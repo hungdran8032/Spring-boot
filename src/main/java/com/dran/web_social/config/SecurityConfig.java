@@ -36,7 +36,10 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**",
-            "/api/v1/users/**"
+            "/api/v1/users/**",
+            "/webjars/**",
+            "/api/v1/password/**"
+
     };
 
     private final String[] BLACK_LIST = {

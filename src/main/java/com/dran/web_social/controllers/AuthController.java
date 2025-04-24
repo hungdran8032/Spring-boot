@@ -4,8 +4,11 @@ import com.dran.web_social.dto.request.LoginRequest;
 import com.dran.web_social.dto.request.RefreshTokenRequest;
 import com.dran.web_social.dto.request.RegisterRequest;
 import com.dran.web_social.dto.response.AuthResponse;
+import com.dran.web_social.models.User;
 import com.dran.web_social.repositories.RefreshTokenRepository;
+import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.AuthService;
+import com.dran.web_social.services.VerificationTokenService;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -23,6 +26,8 @@ public class AuthController {
 
     private final AuthService authService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final VerificationTokenService verificationTokenService;
+    private final UserRepository userRepository;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -57,5 +62,30 @@ public class AuthController {
         // sẽ xử lý callback và trả về JSON
         // Nhưng chúng ta cần định nghĩa nó để Spring Security biết endpoint này tồn tại
         return ResponseEntity.ok(AuthResponse.builder().message("OAuth2 callback").build());
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyAccount(@RequestParam String token) {
+        boolean verified = verificationTokenService.verifyToken(token);
+        if (verified) {
+            return ResponseEntity.ok(
+                    "{\"message\": \"Tài khoản đã được kích hoạt thành công. Bạn có thể đăng nhập ngay bây giờ.\"}");
+        } else {
+            return ResponseEntity.badRequest().body("{\"error\": \"Token không hợp lệ hoặc đã hết hạn.\"}");
+        }
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerificationEmail(@RequestParam String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email: " + email));
+
+        if (user.isEnabled()) {
+            return ResponseEntity.badRequest().body("{\"error\": \"Tài khoản đã được kích hoạt.\"}");
+        }
+
+        verificationTokenService.resendVerificationToken(user);
+        return ResponseEntity
+                .ok("{\"message\": \"Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.\"}");
     }
 }

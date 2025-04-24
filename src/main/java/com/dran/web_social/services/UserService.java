@@ -10,9 +10,10 @@ public interface UserService {
 
     UserResponse getUserByEmail(String email);
 
-    UserResponse updateUser(UpdateUserRequest req);
-
     void checkUserNameExists(String userName);
 
     void checkEmailExists(String email);
+
+    UserResponse updateUser(UpdateUserRequest req);
+
 }

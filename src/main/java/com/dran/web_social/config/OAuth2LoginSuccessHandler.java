@@ -64,6 +64,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             String email = (String) attributes.get("email");
             String name = (String) attributes.get("name");
+            Boolean emailVerified = (Boolean) attributes.get("email_verified");
 
             if (email == null) {
                 log.error("Email is null in OAuth2 attributes");
@@ -84,7 +85,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                         .email(email)
                         .userName(email) // Use email as username
                         .enabled(true)
-                        .isVerified(true) // Google already verified the email
+                        .isVerified(emailVerified != null ? emailVerified : true)
                         .userRoles(new HashSet<>())
                         .build();
 
@@ -117,17 +118,14 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                     .map(ur -> ur.getRole().getName())
                     .collect(Collectors.toSet());
 
-            // String accessToken = jwtConfig.generateAccessToken(user.getUsername(),
-            // roles);
-            // String refreshToken = jwtConfig.generateRefreshToken(user.getUsername());
             String accessToken = jwtConfig.generateToken(user.getUsername(), roles, TokenType.ACCESS_TOKEN);
             String refreshToken = jwtConfig.generateToken(user.getUsername(), roles,
                     TokenType.REFRESH_TOKEN);
             // Lưu refresh token vào database
-            refreshTokenRepository.deleteByUserId(user.getId()); // Xóa refresh token cũ nếu có
+            refreshTokenRepository.deleteByUserId(user.getId());
             RefreshToken refreshTokenEntity = RefreshToken.builder()
                     .token(refreshToken)
-                    .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 7 ngày
+                    .expiryDate(Instant.now().plusMillis(refreshTokenExpiration))
                     .user(user)
                     .build();
             refreshTokenRepository.save(refreshTokenEntity);

@@ -30,7 +30,7 @@ public interface UserMapper {
     @Mapping(target = "message", constant = "Registration successful")
     @Mapping(target = "userName", source = "username")
     @Mapping(target = "token", ignore = true)
-    @Mapping(target = "refreshToken", ignore = true) // Add mapping for refreshToken
+    @Mapping(target = "refreshToken", ignore = true)
     AuthResponse userToAuthResponse(User user);
 
     @Mapping(target = "message", constant = "Login successful")
