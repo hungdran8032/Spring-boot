@@ -31,6 +31,7 @@ public class JwtConfig {
     @Value("${jwt.refresh.expiration}")
     private long refreshExpiration;
 
+    @SuppressWarnings("deprecation")
     public String generateToken(String username, Set<String> roles, TokenType type) {
         Map<String, Object> claims = new HashMap<>();
         if (type == TokenType.ACCESS_TOKEN) {
@@ -67,6 +68,7 @@ public class JwtConfig {
                 && !isAccessTokenExpired(typeToken, token);
     }
 
+    @SuppressWarnings("deprecation")
     private Claims getAllClaimsFromToken(TokenType typeToken, String token) {
         String secret = getSecret(typeToken);
         return Jwts.parser()

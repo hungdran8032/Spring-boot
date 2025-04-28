@@ -1,6 +1,5 @@
 package com.dran.web_social.dto.request;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -13,11 +12,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Schema(description = "Update user request")
 public class UpdateUserRequest {
 
     @NotBlank(message = "Tên người dùng không được để trống")
-    @Schema(description = "Username", example = "johndoe", required = true)
     private String userName;
 
     @Email(message = "Email không hợp lệ")

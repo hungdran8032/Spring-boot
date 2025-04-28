@@ -20,21 +20,16 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/{id}")
-    // @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id") //
-    // Chỉ admin hoặc user sở hữu
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @GetMapping("/username/{userName}")
-    // @PreAuthorize("hasRole('ADMIN') or #userName ==
-    // authentication.principal.username")
     public ResponseEntity<UserResponse> getUserByUserName(@PathVariable String userName) {
         return ResponseEntity.ok(userService.getUserByUserName(userName));
     }
 
     @GetMapping("/email/{email}")
-    // @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }

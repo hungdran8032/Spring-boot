@@ -50,6 +50,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITE_LIST).permitAll()
@@ -88,8 +89,8 @@ public class SecurityConfig {
             @Override
             public CorsConfiguration getCorsConfiguration(@NonNull HttpServletRequest request) {
                 CorsConfiguration cfg = new CorsConfiguration();
-                cfg.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
-                cfg.setAllowedOrigins(Collections.singletonList("http://localhost:9000"));
+                cfg.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+                // cfg.setAllowedOrigins(Collections.singletonList("http://localhost:9000"));
                 cfg.setAllowedMethods(Collections.singletonList("*"));
                 cfg.setAllowedHeaders(Collections.singletonList("*"));
                 cfg.setAllowCredentials(true);

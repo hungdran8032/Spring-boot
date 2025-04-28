@@ -32,7 +32,7 @@ public class EmailServiceImpl implements EmailService {
     @Async
     public void sendVerificationEmail(User user, String token) {
         try {
-            String verificationUrl = appUrl + "/api/v1/auth/verify?token=" + token;
+            String verificationUrl = appUrl + "/api/v1/auth/verify?token=" + token + "&email=" + user.getEmail();
 
             Context context = new Context();
             context.setVariable("name", user.getFirstName() != null ? user.getFirstName() : user.getUsername());
