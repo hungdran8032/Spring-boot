@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
@@ -47,6 +49,16 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpiration;
+
+    private String generatePassword(int length) {
+        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            password.append(characters.charAt(random.nextInt(characters.length())));
+        }
+        return password.toString();
+    }
 
     @Transactional
     @Override
@@ -80,10 +92,13 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             if (userOptional.isEmpty()) {
                 log.info("Creating new user for email: {}", email);
+                String randomPassword = generatePassword(6); // Độ dài 12 ký tự
+                String encodedPassword = new BCryptPasswordEncoder().encode(randomPassword);
                 // Create new user
                 user = User.builder()
                         .email(email)
                         .userName(email) // Use email as username
+                        .password(encodedPassword)
                         .enabled(true)
                         .isVerified(emailVerified != null ? emailVerified : true)
                         .userRoles(new HashSet<>())
@@ -138,11 +153,14 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                     .refreshToken(refreshToken)
                     .build();
 
-            // Trả về JSON response
+            // // Trả về JSON response
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
             response.getWriter().write(objectMapper.writeValueAsString(authResponse));
-
+            String redirectUrl = String.format(
+                    "http://localhost:3000/google/callback?token=%s&refreshToken=%s",
+                    accessToken, refreshToken);
+            response.sendRedirect(redirectUrl);
             log.info("OAuth2 authentication completed successfully for user: {}", user.getUsername());
         } catch (Exception e) {
             log.error("Error in OAuth2 authentication success handler", e);

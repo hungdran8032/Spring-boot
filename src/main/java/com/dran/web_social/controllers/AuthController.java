@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import java.io.IOException;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -65,13 +66,13 @@ public class AuthController {
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<String> verifyAccount(@RequestParam String token) {
+    public String verifyAccount(@RequestParam String token, Model model) {
         boolean verified = verificationTokenService.verifyToken(token);
         if (verified) {
-            return ResponseEntity.ok(
-                    "{\"message\": \"Tài khoản đã được kích hoạt thành công. Bạn có thể đăng nhập ngay bây giờ.\"}");
+            return "activation-success";
         } else {
-            return ResponseEntity.badRequest().body("{\"error\": \"Token không hợp lệ hoặc đã hết hạn.\"}");
+            model.addAttribute("error", "Token không hợp lệ hoặc đã hết hạn.");
+            return "activation-error"; // Trả về template lỗi (tạo sau)
         }
     }
 
