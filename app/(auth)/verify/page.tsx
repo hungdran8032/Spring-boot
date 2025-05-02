@@ -1,10 +1,10 @@
 "use client"
-
+// Verify email khi đăng ký tài khoản
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { verifyEmail } from "@/lib/auth-service"
+import { authService } from "@/lib/auth-service"
 import { Loader2, CheckCircle, XCircle } from "lucide-react"
 
 export default function VerifyPage() {
@@ -21,17 +21,17 @@ export default function VerifyPage() {
       if (!token) {
         setIsVerifying(false)
         setIsSuccess(false)
-        setMessage("Verification token is missing.")
+        setMessage("Không tìm thấy mã xác thực.")
         return
       }
 
       try {
-        const response = await verifyEmail(token)
+        const response = await authService.verifyEmail(token)
         setIsSuccess(true)
         setMessage(response)
       } catch (error) {
         setIsSuccess(false)
-        setMessage(error instanceof Error ? error.message : "Verification failed.")
+        setMessage(error instanceof Error ? error.message : "Xác thực thất bại.")
       } finally {
         setIsVerifying(false)
       }
@@ -44,13 +44,13 @@ export default function VerifyPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="mx-auto max-w-md w-full">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Email Verification</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Xác thực tài khoản</CardTitle>
           <CardDescription className="text-center">
             {isVerifying
-              ? "Verifying your email address..."
+              ? "Đang xác thực địa chỉ email của bạn..."
               : isSuccess
-                ? "Verification successful!"
-                : "Verification failed"}
+                ? "Xác thực thành công!"
+                : "Xác thực thất bại"}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center py-8">
@@ -65,7 +65,7 @@ export default function VerifyPage() {
         </CardContent>
         <CardFooter>
           <Button className="w-full" onClick={() => router.push(isSuccess ? "/login" : "/")}>
-            {isSuccess ? "Go to Login" : "Back to Home"}
+            {isSuccess ? "Đến trang đăng nhập" : "Quay lại trang chủ"}
           </Button>
         </CardFooter>
       </Card>

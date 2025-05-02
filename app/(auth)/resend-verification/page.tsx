@@ -1,5 +1,5 @@
 "use client"
-
+// Gửi lại email xác thực khi đăng ký tài khoản
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,11 +11,11 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Mail } from "lucide-react"
-import { resendVerification } from "@/lib/auth-service"
+import { authService } from "@/lib/auth-service"
 import Link from "next/link"
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
+  email: z.string().email({ message: "Vui lòng nhập địa chỉ email hợp lệ" }),
 })
 
 export default function ResendVerificationPage() {
@@ -34,10 +34,10 @@ export default function ResendVerificationPage() {
     setIsLoading(true)
 
     try {
-      const message = await resendVerification(values.email)
+      const message = await authService.resendVerification(values.email)
 
       toast({
-        title: "Verification email sent",
+        title: "Email xác thực đã được gửi",
         description: message,
       })
 
@@ -45,8 +45,8 @@ export default function ResendVerificationPage() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to resend verification",
-        description: error instanceof Error ? error.message : "Please try again later.",
+        title: "Không thể gửi lại email xác thực",
+        description: error instanceof Error ? error.message : "Vui lòng thử lại sau.",
       })
     } finally {
       setIsLoading(false)
@@ -57,9 +57,9 @@ export default function ResendVerificationPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="mx-auto max-w-md w-full">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">Resend Verification Email</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Gửi lại email xác thực</CardTitle>
           <CardDescription className="text-center">
-            Enter your email address to receive a new verification link
+            Nhập địa chỉ email của bạn để nhận được liên kết xác thực mới
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -80,14 +80,14 @@ export default function ResendVerificationPage() {
               />
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-                Resend Verification Email
+                Gửi lại email xác thực
               </Button>
             </form>
           </Form>
         </CardContent>
         <CardFooter>
           <Button variant="outline" asChild className="w-full">
-            <Link href="/login">Back to Login</Link>
+            <Link href="/login">Quay lại đăng nhập</Link>
           </Button>
         </CardFooter>
       </Card>

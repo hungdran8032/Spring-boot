@@ -41,7 +41,8 @@ export function ForgotPasswordForm() {
         description: message,
       });
 
-      router.push("/login");
+      // Thêm tham số type và email vào URL
+      router.push(`/verification-sent?type=password-reset&email=${encodeURIComponent(values.email)}`);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error || error.message || "Vui lòng thử lại sau.";

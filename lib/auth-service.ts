@@ -62,11 +62,11 @@ export const authService = {
     logout: async (): Promise<{ message: string }> => {
         const refreshToken = localStorage.getItem("refreshToken");
         if (refreshToken) {
-        const response = await api.post<{ message: string }>('/auth/logout', { refreshToken });
-        // Xóa token và refresh token khỏi localStorage
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        return response.data;
+            const response = await api.post<{ message: string }>('/auth/logout', { refreshToken });
+            // Xóa token và refresh token khỏi localStorage
+            localStorage.removeItem("token");
+            localStorage.removeItem("refreshToken");
+            return response.data;
         }
         return { message: 'Đăng xuất thành công' };
     },
@@ -74,6 +74,20 @@ export const authService = {
     loginGoogle: () => {
         // Chuyển hướng đến endpoint backend để bắt đầu quá trình đăng nhập Google
         window.location.href = `${API_URL}/auth/google/login`
+    },
+
+
+    //Chỗ này
+    resendVerification: async (email: string): Promise<string> => {
+        const response = await api.post<{ message: string }>('/auth/resend-verification', { email });
+        return response.data.message;
+    },
+
+    verifyEmail: async (token: string): Promise<string> => {
+        const response = await api.get<{ message: string }>('/auth/verify', {
+            params: { token },
+        });
+        return response.data.message;
     },
 
     getRefreshToken: (): string | null => {

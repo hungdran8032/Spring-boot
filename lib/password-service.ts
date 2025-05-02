@@ -13,6 +13,11 @@ export interface ResetPasswordRequest {
 }
 
 export const passwordService = {
+  changePassword: async (data: ResetPasswordRequest): Promise<string> => {
+    const response = await api.post<{ message: string }>('/password/change', data);
+    return response.data.message;
+  },
+
   forgotPassword: async (data: ForgotPasswordRequest): Promise<string> => {
     const response = await api.post<{ message: string }>('/password/forgot', data);
     return response.data.message;
@@ -25,6 +30,13 @@ export const passwordService = {
   validateResetToken: async (token: string): Promise<string> => {
     const response = await api.get<{ message: string }>('/password/validate-token', {
       params: { token },
+    });
+    return response.data.message;
+  },
+
+  resendResetPasswordEmail: async (email: string): Promise<string> => {
+    const response = await api.post<{ message: string }>('/password/resent-email', null, {
+      params: { email },
     });
     return response.data.message;
   },
