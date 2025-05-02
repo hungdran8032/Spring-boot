@@ -1,6 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
+import { toast } from "@/hooks/use-toast"
 import { authService } from "@/lib/auth-service"
 import { ArrowRight, LogOut } from "lucide-react"
 import Link from "next/link"
@@ -19,8 +20,9 @@ export default function Home() {
     try {
       await authService.logout()
       setIsAuth(false)
-      console.log("Logout successful")
+      
       router.push("/login")
+      toast({ title: "Đăng xuất thành công", description: "Bạn đã đăng xuất thành công" })
     } catch (err) {
       console.error("Logout failed", err)
     }
@@ -68,7 +70,7 @@ export default function Home() {
             </Link>
           </Button>
           <Button asChild variant="outline" size="lg">
-            <Link href="/register">Create an account</Link>
+            <Link href="/register">Tạo tài khoản</Link>
           </Button>
         </div>
       </div>
