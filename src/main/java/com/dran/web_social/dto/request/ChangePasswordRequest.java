@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChangePasswordRequest {
+    private String userName;
 
     @NotBlank(message = "Mật khẩu hiện tại không được để trống")
     private String currentPassword;

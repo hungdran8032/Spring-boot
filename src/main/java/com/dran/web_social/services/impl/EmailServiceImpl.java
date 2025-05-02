@@ -25,6 +25,9 @@ public class EmailServiceImpl implements EmailService {
     @Value("${app.url:http://localhost:9000}")
     private String appUrl;
 
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
+
     @Value("${spring.mail.username}")
     private String fromEmail;
 
@@ -32,7 +35,7 @@ public class EmailServiceImpl implements EmailService {
     @Async
     public void sendVerificationEmail(User user, String token) {
         try {
-            String verificationUrl = appUrl + "/api/v1/auth/verify?token=" + token + "&email=" + user.getEmail();
+            String verificationUrl = frontendUrl + "/verify?token=" + token + "&email=" + user.getEmail();
 
             Context context = new Context();
             context.setVariable("name", user.getFirstName() != null ? user.getFirstName() : user.getUsername());
@@ -58,7 +61,7 @@ public class EmailServiceImpl implements EmailService {
     @Async
     public void sendPasswordResetEmail(User user, String token) {
         try {
-            String resetUrl = appUrl + "/api/v1/password/reset?token=" + token;
+            String resetUrl = frontendUrl + "/reset-password?token=" + token;
 
             Context context = new Context();
             context.setVariable("name", user.getFirstName() != null ? user.getFirstName() : user.getUsername());

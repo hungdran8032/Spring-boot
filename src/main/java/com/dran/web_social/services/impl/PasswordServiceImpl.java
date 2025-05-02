@@ -1,5 +1,7 @@
 package com.dran.web_social.services.impl;
 
+import com.dran.web_social.custom.exception.BadRequestException;
+import com.dran.web_social.custom.exception.ResourceNotFoundException;
 import com.dran.web_social.dto.request.ChangePasswordRequest;
 import com.dran.web_social.dto.request.ForgotPasswordRequest;
 import com.dran.web_social.dto.request.ResetPasswordRequest;
@@ -10,6 +12,7 @@ import com.dran.web_social.repositories.UserTokenRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.EmailService;
 import com.dran.web_social.services.PasswordService;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,30 +32,28 @@ public class PasswordServiceImpl implements PasswordService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final EmailService emailService;
 
-    @Value("${app.password.reset.token.expiration:15}") // 15 minutes by default
+    @Value("${app.password.reset.token.expiration:15}")
     private int tokenExpirationMinutes;
 
     @Override
     @Transactional
     public void changePassword(String username, ChangePasswordRequest request) {
-        // Validate request
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("Mật khẩu mới và xác nhận mật khẩu không khớp");
+            throw new BadRequestException("Mật khẩu mới và xác nhận mật khẩu không khớp");
         }
 
-        // Get user
+        if (request.getNewPassword().length() < 8) {
+            throw new BadRequestException("Mật khẩu mới phải có ít nhất 8 ký tự");
+        }
+
         User user = userRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
 
-        // Verify current password
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Mật khẩu hiện tại không chính xác");
+            throw new BadRequestException("Mật khẩu hiện tại không chính xác");
         }
 
-        // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-
         log.info("Password changed successfully for user: {}", username);
     }
 
@@ -64,8 +65,11 @@ public class PasswordServiceImpl implements PasswordService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email: " + request.getEmail()));
 
         // Delete any existing tokens
-        passwordResetTokenRepository.findByUser(user).ifPresent(passwordResetTokenRepository::delete);
-
+        // passwordResetTokenRepository.findByUser(user).ifPresent(passwordResetTokenRepository::delete);
+        passwordResetTokenRepository.findByUser(user).ifPresent(token -> {
+            passwordResetTokenRepository.delete(token);
+            passwordResetTokenRepository.flush();
+        });
         // Create new token
         UserToken token = UserToken.generateToken(user, tokenExpirationMinutes, TypeUserToken.RESET_PASSWORD);
         passwordResetTokenRepository.save(token);

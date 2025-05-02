@@ -92,11 +92,20 @@ public class VerificationTokenServiceImpl implements VerificationTokenService {
     @Override
     @Transactional
     public void resendVerificationToken(User user) {
-        // Delete old token if exists
-        verificationTokenRepository.findByUser(user).ifPresent(verificationTokenRepository::delete);
+        // Xóa token cũ nếu có
+        verificationTokenRepository.findByUser(user).ifPresent(token -> {
+            verificationTokenRepository.delete(token);
+            verificationTokenRepository.flush();
+        });
 
-        // Create new token
-        createVerificationToken(user);
-        log.info("Verification token resent for user: {}", user.getUsername());
+        // Tạo token mới
+        UserToken token = UserToken.generateToken(user, tokenExpirationMinutes, TypeUserToken.VERIFICATION);
+        UserToken savedToken = verificationTokenRepository.save(token);
+
+        // Gửi email xác thực
+        emailService.sendVerificationEmail(user, savedToken.getToken());
+
+        log.info("Đã gửi lại email xác thực cho user: {}", user.getUsername());
     }
+
 }

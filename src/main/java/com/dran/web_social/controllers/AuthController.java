@@ -15,9 +15,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -66,27 +67,47 @@ public class AuthController {
     }
 
     @GetMapping("/verify")
-    public String verifyAccount(@RequestParam String token, Model model) {
+    public ResponseEntity<Map<String, String>> verifyAccount(@RequestParam String token) {
         boolean verified = verificationTokenService.verifyToken(token);
+        Map<String, String> response = new HashMap<>();
+
         if (verified) {
-            return "activation-success";
+            response.put("message", "Tài khoản đã được kích hoạt thành công");
+            return ResponseEntity.ok(response);
         } else {
-            model.addAttribute("error", "Token không hợp lệ hoặc đã hết hạn.");
-            return "activation-error"; // Trả về template lỗi (tạo sau)
+            response.put("message", "Token không hợp lệ hoặc đã hết hạn");
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<String> resendVerificationEmail(@RequestParam String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email: " + email));
-
-        if (user.isEnabled()) {
-            return ResponseEntity.badRequest().body("{\"error\": \"Tài khoản đã được kích hoạt.\"}");
+    public ResponseEntity<Map<String, String>> resendVerificationEmail(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", "Email không được cung cấp");
+            return ResponseEntity.badRequest().body(errorResponse);
         }
 
-        verificationTokenService.resendVerificationToken(user);
-        return ResponseEntity
-                .ok("{\"message\": \"Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.\"}");
+        try {
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với email: " + email));
+
+            if (user.isEnabled()) {
+                Map<String, String> errorResponse = new HashMap<>();
+                errorResponse.put("message", "Tài khoản đã được kích hoạt");
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            verificationTokenService.resendVerificationToken(user);
+
+            Map<String, String> successResponse = new HashMap<>();
+            successResponse.put("message", "Email xác thực đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn");
+            return ResponseEntity.ok(successResponse);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
     }
 }
