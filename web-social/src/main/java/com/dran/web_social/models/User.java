@@ -45,6 +45,9 @@ public class User extends BaseEntity implements UserDetails {
     private boolean enabled;
     private boolean isVerified;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<Post> posts = new HashSet<>();
+
     // reference to user_role
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Set<UserRole> userRoles = new HashSet<>();
