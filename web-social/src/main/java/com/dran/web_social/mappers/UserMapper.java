@@ -25,6 +25,7 @@ public interface UserMapper {
     @Mapping(target = "avatar", ignore = true)
     @Mapping(target = "gender", ignore = true)
     @Mapping(target = "birthDay", ignore = true)
+    @Mapping(target = "posts", ignore = true)
     User registerRequestToUser(RegisterRequest request);
 
     @Mapping(target = "message", constant = "Registration successful")
