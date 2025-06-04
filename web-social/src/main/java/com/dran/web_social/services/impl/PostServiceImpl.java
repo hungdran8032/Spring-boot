@@ -40,26 +40,10 @@ public class PostServiceImpl implements PostService {
     private final PostMapper postMapper;
     private final MediaService mediaService;
 
-    // K can xai
-    @Override
-    @Transactional
-    public PostResponse createPost(String username, PostRequest request) {
-        User user = userRepository.findByUserName(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với tên: " + username));
-
-        Post post = postMapper.postRequestToPost(request);
-        post.setUser(user);
-
-        Post savedPost = postRepository.save(post);
-        log.info("Đã tạo bài viết mới với ID: {}", savedPost.getId());
-
-        return postMapper.postToPostResponse(savedPost);
-    }
-
     @Override
     @Transactional
     public PostResponse createPostWithMedia(String username, PostRequest request, List<MultipartFile> files) {
-        // PostResponse postResponse = createPost(username, request);
+
         User user = userRepository.findByUserName(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với tên: " + username));
         Post posts = postMapper.postRequestToPost(request);
@@ -105,7 +89,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public PostResponse updatePost(String username, Long postId, PostRequest request) {
+    public PostResponse updatePost(String username, Long postId, PostRequest request, List<MultipartFile> files) {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài viết với ID: " + postId));
 
@@ -114,6 +98,12 @@ public class PostServiceImpl implements PostService {
         }
 
         post.setContent(request.getContent());
+
+        if (files != null && !files.isEmpty()) {
+            List<Media> mediaList = uploadMediaFiles(files, post);
+            post.getMedia().addAll(mediaList);
+        }
+
         Post updatedPost = postRepository.save(post);
         log.info("Đã cập nhật bài viết với ID: {}", updatedPost.getId());
 
@@ -139,52 +129,6 @@ public class PostServiceImpl implements PostService {
 
         postRepository.delete(post);
         log.info("Đã xóa bài viết với ID: {}", postId);
-    }
-
-    @Override
-    @Transactional
-    public void addMediaToPost(String username, Long postId, List<MultipartFile> files) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài viết với ID: " + postId));
-
-        if (!post.getUser().getUsername().equals(username)) {
-            throw new AccessDeniedException("Bạn không có quyền thêm media vào bài viết này");
-        }
-
-        if (files != null && !files.isEmpty()) {
-            List<Media> mediaList = uploadMediaFiles(files, post);
-            post.getMedia().addAll(mediaList);
-            postRepository.save(post);
-            log.info("Đã thêm {} media vào bài viết với ID: {}", mediaList.size(), postId);
-        }
-    }
-
-    @Override
-    @Transactional
-    public void removeMediaFromPost(String username, Long postId, Long mediaId) {
-        Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài viết với ID: " + postId));
-
-        if (!post.getUser().getUsername().equals(username)) {
-            throw new AccessDeniedException("Bạn không có quyền xóa media khỏi bài viết này");
-        }
-
-        Media media = mediaRepository.findById(mediaId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy media với ID: " + mediaId));
-
-        if (!media.getPost().getId().equals(postId)) {
-            throw new AccessDeniedException("Media này không thuộc về bài viết đã chỉ định");
-        }
-
-        // Xóa file trên Cloudinary
-        if (media.getPublicId() != null) {
-            cloudService.deleteFile(media.getPublicId());
-        }
-
-        // Xóa media khỏi post và database
-        post.getMedia().remove(media);
-        mediaRepository.delete(media);
-        log.info("Đã xóa media với ID: {} khỏi bài viết với ID: {}", mediaId, postId);
     }
 
     private List<Media> uploadMediaFiles(List<MultipartFile> files, Post post) {

@@ -42,7 +42,6 @@ public class PostController {
     public ResponseEntity<PostResponse> createPostWithMedia(
             @AuthenticationPrincipal User user,
             @RequestPart(value = "post", required = false) String post,
-            // @RequestPart(value = "post", required = false) PostRequest request,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
         PostRequest request = JsonUtil.parseJson(post, PostRequest.class);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -81,12 +80,15 @@ public class PostController {
         return ResponseEntity.ok(postService.getPostsByUser(username, pageable));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostResponse> updatePost(
             @AuthenticationPrincipal User user,
             @PathVariable Long id,
-            @Valid @RequestBody PostRequest request) {
-        return ResponseEntity.ok(postService.updatePost(user.getUsername(), id, request));
+            @RequestPart(value = "post", required = false) String post,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+
+        PostRequest request = JsonUtil.parseJson(post, PostRequest.class);
+        return ResponseEntity.ok(postService.updatePost(user.getUsername(), id, request, files));
     }
 
     @DeleteMapping("/{id}")
@@ -97,21 +99,4 @@ public class PostController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{id}/media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Void> addMediaToPost(
-            @AuthenticationPrincipal User user,
-            @PathVariable Long id,
-            @RequestPart("files") List<MultipartFile> files) {
-        postService.addMediaToPost(user.getUsername(), id, files);
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/{postId}/media/{mediaId}")
-    public ResponseEntity<Void> removeMediaFromPost(
-            @AuthenticationPrincipal User user,
-            @PathVariable Long postId,
-            @PathVariable Long mediaId) {
-        postService.removeMediaFromPost(user.getUsername(), postId, mediaId);
-        return ResponseEntity.noContent().build();
-    }
 }

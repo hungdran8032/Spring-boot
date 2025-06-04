@@ -9,7 +9,6 @@ import com.dran.web_social.dto.request.PostRequest;
 import com.dran.web_social.dto.response.PostResponse;
 
 public interface PostService {
-    PostResponse createPost(String username, PostRequest request);
 
     PostResponse createPostWithMedia(String username, PostRequest request, List<MultipartFile> files);
 
@@ -19,11 +18,7 @@ public interface PostService {
 
     Page<PostResponse> getPostsByUser(String username, Pageable pageable);
 
-    PostResponse updatePost(String username, Long postId, PostRequest request);
+    PostResponse updatePost(String username, Long postId, PostRequest request, List<MultipartFile> files);
 
     void deletePost(String username, Long postId);
-
-    void addMediaToPost(String username, Long postId, List<MultipartFile> files);
-
-    void removeMediaFromPost(String username, Long postId, Long mediaId);
 }
