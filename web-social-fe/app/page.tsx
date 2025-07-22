@@ -1,79 +1,34 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { toast } from "@/hooks/use-toast"
-import { authService } from "@/lib/auth-service"
-import { ArrowRight, LogOut } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import FeedContent from "@/components/feed/feed-content"
 
 export default function Home() {
-  const [isAuth, setIsAuth] = useState<boolean>(false)
-  const router = useRouter()
-
-  useEffect(() => {
-    setIsAuth(!!authService.getToken())
-  }, [])
-
-  const handleLogout = async () => {
-    try {
-      await authService.logout()
-      setIsAuth(false)
-      
-      router.push("/login")
-      toast({ title: "Đăng xuất thành công", description: "Bạn đã đăng xuất thành công" })
-    } catch (err) {
-      console.error("Logout failed", err)
-    }
-  }
-
-  if (isAuth) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-rose-50 to-white dark:from-gray-900 dark:to-gray-950">
-        <div className="max-w-md w-full text-center space-y-8">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">Welcome Back!</h1>
-            <p className="text-muted-foreground">You are now signed in to your account</p>
-          </div>
-          <div className="flex flex-col gap-4">
-            <Button asChild size="lg" className="gap-2">
-              <Link href="/dashboard">
-                Go to Dashboard <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              onClick={handleLogout}
-              size="lg"
-              variant="outline"
-              className="gap-2"
-            >
-              <LogOut className="h-4 w-4" /> Logout
-            </Button>
-          </div>
-        </div>
-      </main>
-    )
-  }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-rose-50 to-white dark:from-gray-900 dark:to-gray-950">
-      <div className="max-w-md w-full text-center space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Welcome</h1>
-          <p className="text-muted-foreground">Sign in to access your account or create a new one</p>
+    <div className="container py-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        {/* content */}
+        <div className="col-span-1 lg:col-span-3">
+          <FeedContent />
         </div>
-        <div className="flex flex-col gap-4">
-          <Button asChild size="lg" className="gap-2">
-            <Link href="/login">
-              Sign in <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <Link href="/register">Tạo tài khoản</Link>
-          </Button>
+        {/* right sidebar */}
+        <div className="hidden lg:block lg:col-span-1">
+          <div className="sticky top-20">
+            <h3 className="font-medium mb-4">Suggested for you</h3>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-lg border">
+                  <div className="w-10 h-10 rounded-full bg-muted" />
+                  <div>
+                    <p className="font-medium">User Name</p>
+                    <p className="text-sm text-muted-foreground">@username</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 }

@@ -1,0 +1,144 @@
+"use client"
+
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Heart, MessageCircle, Send } from "lucide-react"
+
+interface CommentData {
+  id: string
+  user: {
+    name: string
+    username: string
+    avatar: string
+  }
+  content: string
+  likes: number
+  createdAt: string
+  replies?: CommentData[]
+}
+
+interface CommentProps {
+  comment: CommentData
+  level?: number
+}
+
+export default function Comment({ comment, level = 0 }: CommentProps) {
+  const [liked, setLiked] = useState(false)
+  const [likesCount, setLikesCount] = useState(comment.likes)
+  const [showReplyInput, setShowReplyInput] = useState(false)
+  const [replyText, setReplyText] = useState("")
+  const [replies, setReplies] = useState(comment.replies || [])
+
+  const handleLike = () => {
+    if (liked) {
+      setLikesCount(likesCount - 1)
+    } else {
+      setLikesCount(likesCount + 1)
+    }
+    setLiked(!liked)
+  }
+
+  const handleReply = () => {
+    if (replyText.trim()) {
+      const newReply: CommentData = {
+        id: `${Date.now()}`,
+        user: {
+          name: "Current User",
+          username: "currentuser",
+          avatar: "/placeholder.svg?height=32&width=32",
+        },
+        content: replyText,
+        likes: 0,
+        createdAt: "Just now",
+        replies: [],
+      }
+
+      setReplies([...replies, newReply])
+      setReplyText("")
+      setShowReplyInput(false)
+    }
+  }
+
+  const maxLevel = 3 // Maximum nesting level
+
+  return (
+    <div className={`${level > 0 ? "ml-8 mt-3" : "mt-4"}`}>
+      <div className="flex gap-3">
+        <Avatar className="h-8 w-8">
+          <AvatarImage src={comment.user.avatar || "/placeholder.svg"} alt={comment.user.name} />
+          <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback>
+        </Avatar>
+
+        <div className="flex-1">
+          <div className="bg-muted rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-medium text-sm">{comment.user.name}</span>
+              <span className="text-xs text-muted-foreground">@{comment.user.username}</span>
+              <span className="text-xs text-muted-foreground">•</span>
+              <span className="text-xs text-muted-foreground">{comment.createdAt}</span>
+            </div>
+            <p className="text-sm">{comment.content}</p>
+          </div>
+
+          <div className="flex items-center gap-4 mt-2">
+            <Button variant="ghost" size="sm" className="h-auto p-1 text-xs" onClick={handleLike}>
+              <Heart className={`h-3 w-3 mr-1 ${liked ? "fill-red-500 text-red-500" : ""}`} />
+              {likesCount > 0 && likesCount}
+            </Button>
+
+            {level < maxLevel && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-1 text-xs"
+                onClick={() => setShowReplyInput(!showReplyInput)}
+              >
+                <MessageCircle className="h-3 w-3 mr-1" />
+                Reply
+              </Button>
+            )}
+          </div>
+
+          <AnimatePresence>
+            {showReplyInput && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-3 flex gap-2"
+              >
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src="/placeholder.svg?height=24&width=24" />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 flex gap-2">
+                  <Input
+                    placeholder="Write a reply..."
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    className="h-8 text-sm"
+                    onKeyPress={(e) => e.key === "Enter" && handleReply()}
+                  />
+                  <Button size="sm" onClick={handleReply} className="h-8 w-8 p-0">
+                    <Send className="h-3 w-3" />
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {replies.length > 0 && (
+            <div className="mt-2">
+              {replies.map((reply) => (
+                <Comment key={reply.id} comment={reply} level={level + 1} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

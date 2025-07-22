@@ -4,6 +4,7 @@ import com.dran.web_social.dto.request.LoginRequest;
 import com.dran.web_social.dto.request.RefreshTokenRequest;
 import com.dran.web_social.dto.request.RegisterRequest;
 import com.dran.web_social.dto.response.AuthResponse;
+import com.dran.web_social.dto.response.UserResponse;
 import com.dran.web_social.models.User;
 import com.dran.web_social.repositories.RefreshTokenRepository;
 import com.dran.web_social.repositories.UserRepository;
@@ -15,10 +16,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -109,5 +113,27 @@ public class AuthController {
             errorResponse.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal User user) {
+        // Dùng userResponse
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        UserResponse userResponse = UserResponse.builder()
+                .userName(user.getUsername())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .phone(user.getPhone())
+                .address(user.getAddress())
+                .avatar(user.getAvatar())
+                .role(user.getUserRoles().stream()
+                        .map(role -> role.getRole().getName())
+                        .collect(Collectors.joining(", ")))
+                .gender(user.getGender())
+                .birthDay(user.getBirthDay() != null ? dateFormat.format(user.getBirthDay()) : null)
+                .build();
+
+        return ResponseEntity.ok(userResponse);
     }
 }

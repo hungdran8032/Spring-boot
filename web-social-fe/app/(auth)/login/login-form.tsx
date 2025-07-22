@@ -39,14 +39,14 @@ export function LoginForm() {
       rememberMe: false,
     },
   });
-
+  const { login } = useAuth();
   const onSubmit = async (data: LoginFormValues) => {
     try {
       setLoading(true);
 
-      const auth = await authService.login(data);
-
-      console.log(auth);
+      // const auth = await authService.login(data);
+      await login(data);
+      // console.log(auth);
 
        toast({
            title: "Login successful",

@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 import { AuthProvider } from "@/contexts/AuthContext"
 import { Toaster } from "@/components/ui/toaster"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import AppLayout from "@/components/app-layout"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,8 +25,12 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>
-          {children}
-          <Toaster/>
+            <SidebarProvider>
+              <AppLayout>
+                {children}
+                <Toaster/>
+              </AppLayout>
+            </SidebarProvider>
         </AuthProvider>
         </ThemeProvider>
       </body>

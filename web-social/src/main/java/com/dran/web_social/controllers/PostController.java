@@ -28,7 +28,6 @@ import com.dran.web_social.models.User;
 import com.dran.web_social.services.PostService;
 import com.dran.web_social.utils.JsonUtil;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController

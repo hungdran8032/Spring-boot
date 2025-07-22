@@ -1,6 +1,7 @@
 "use client"
 
 import { api, API_URL } from './api-service';
+import { UserResponse } from './user-service';
 
 export interface Register {
     userName: string;
@@ -97,4 +98,28 @@ export const authService = {
     getToken: (): string | null => {
         return localStorage.getItem("token");
     },
+
+    // getCurrentUser: async (): Promise<Auth> => {
+    //     const token = localStorage.getItem("token");
+    //     if (!token) throw new Error("No token found");
+    //     const response = await api.get<Auth>('/auth/me', {
+    //         headers: {
+    //             Authorization: `Bearer ${token}`,
+    //         },
+    //     });
+    //     return response.data;
+    // }
+
+     getCurrentUser: async (): Promise<UserResponse> => {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token found");
+        const response = await api.get<UserResponse>('/auth/me', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    }
+
+    
 }
