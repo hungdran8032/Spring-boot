@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.dran.web_social.dto.request.PostRequest;
 import com.dran.web_social.dto.response.PostResponse;
+import com.dran.web_social.models.User;
 
 public interface PostService {
 
@@ -20,5 +21,5 @@ public interface PostService {
 
     PostResponse updatePost(String username, Long postId, PostRequest request, List<MultipartFile> files);
 
-    void deletePost(String username, Long postId);
+    void deletePost(User user, Long postId);
 }

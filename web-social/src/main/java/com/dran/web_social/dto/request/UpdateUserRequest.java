@@ -1,5 +1,7 @@
 package com.dran.web_social.dto.request;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -29,10 +31,18 @@ public class UpdateUserRequest {
 
     private String address;
 
-    private String avatar;
+    private MultipartFile avatar;
 
     private String gender;
 
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "Ngày sinh phải có định dạng yyyy-MM-dd")
     private String birthDay;
+
+    private String bio;
+
+    private String website;
+
+    private String location;
+
+    private MultipartFile banner;
 }

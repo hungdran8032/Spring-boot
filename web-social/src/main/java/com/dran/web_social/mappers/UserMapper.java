@@ -26,6 +26,7 @@ public interface UserMapper {
     @Mapping(target = "gender", ignore = true)
     @Mapping(target = "birthDay", ignore = true)
     @Mapping(target = "posts", ignore = true)
+    @Mapping(target = "profile", ignore = true) // ignore profile mapping for now
     User registerRequestToUser(RegisterRequest request);
 
     @Mapping(target = "message", constant = "Registration successful")
@@ -41,8 +42,15 @@ public interface UserMapper {
     AuthResponse userToLoginAuthResponse(User user);
 
     @Mapping(target = "userName", source = "username")
-    @Mapping(target = "role", ignore = true)
+    // @Mapping(target = "role", ignore = true)
     @Mapping(target = "isVerified", source = "verified")
     @Mapping(target = "roles", expression = "java(user.getUserRoles().stream().map(ur -> ur.getRole().getName()).collect(java.util.stream.Collectors.toSet()))")
+    @Mapping(target = "bio", source = "profile.bio")
+    @Mapping(target = "banner", source = "profile.banner")
+    @Mapping(target = "website", source = "profile.website")
+    @Mapping(target = "location", source = "profile.location")
+    @Mapping(target = "followersCount", source = "profile.followersCount")
+    @Mapping(target = "followingCount", source = "profile.followingCount")
+    @Mapping(target = "postsCount", source = "profile.postsCount")
     UserResponse userToUserResponse(User user);
 }

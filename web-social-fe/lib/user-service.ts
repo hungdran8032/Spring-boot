@@ -13,7 +13,8 @@ export interface UserResponse {
   gender: string;
   birthDay: string;
   enabled: boolean;
-  isVerified: boolean;
+  // isVerified: boolean;
+  verified: boolean;
   roles: string[];
 }
 
@@ -22,5 +23,10 @@ export const UserService = {
     const response = await api.get<UserResponse>(`/users/${userName}`);
     return response.data;
   },
+
+  getUserByEmail: async (email: string): Promise<UserResponse> => {
+    const response = await api.get<UserResponse>(`/users/email/${email}`);
+    return response.data;
+  }
   
 };

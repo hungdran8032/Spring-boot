@@ -10,7 +10,7 @@ import AppLayout from "@/components/app-layout"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "Modern Authentication",
+  title: "SkyBlue",
   description: "Professional authentication system with Next.js and shadcn/ui",
     generator: 'v0.dev'
 }

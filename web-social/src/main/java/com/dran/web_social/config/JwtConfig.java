@@ -52,6 +52,7 @@ public class JwtConfig {
 
     public String getUsernameFromToken(TokenType typeToken, String token) {
         Claims claims = getAllClaimsFromToken(typeToken, token);
+
         return claims.getSubject();
     }
 

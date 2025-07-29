@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.dran.web_social.custom.exception.ResourceNotFoundException;
 import com.dran.web_social.dto.request.PostRequest;
 import com.dran.web_social.dto.response.PostResponse;
 import com.dran.web_social.models.User;
@@ -37,6 +38,7 @@ public class PostController {
 
     private final PostService postService;
 
+    // Tạo bài viết
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostResponse> createPostWithMedia(
             @AuthenticationPrincipal User user,
@@ -73,16 +75,21 @@ public class PostController {
             @RequestParam(defaultValue = "createAt") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
 
-        Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-        return ResponseEntity.ok(postService.getPostsByUser(username, pageable));
+        try {
+            Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+            Pageable pageable = PageRequest.of(page, size, sort);
+            Page<PostResponse> posts = postService.getPostsByUser(username, pageable);
+            return ResponseEntity.ok(posts);
+        } catch (ResourceNotFoundException e) {
+            // Return empty page instead of error
+            return ResponseEntity.ok(Page.empty());
+        }
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PostResponse> updatePost(
             @AuthenticationPrincipal User user,
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestPart(value = "post", required = false) String post,
             @RequestPart(value = "files", required = false) List<MultipartFile> files) {
 
@@ -93,8 +100,8 @@ public class PostController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(
             @AuthenticationPrincipal User user,
-            @PathVariable Long id) {
-        postService.deletePost(user.getUsername(), id);
+            @PathVariable("id") Long id) {
+        postService.deletePost(user, id);
         return ResponseEntity.noContent().build();
     }
 

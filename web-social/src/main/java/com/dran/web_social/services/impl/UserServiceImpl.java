@@ -3,8 +3,11 @@ package com.dran.web_social.services.impl;
 import com.dran.web_social.dto.request.UpdateUserRequest;
 import com.dran.web_social.dto.response.UserResponse;
 import com.dran.web_social.mappers.UserMapper;
+import com.dran.web_social.models.Profile;
 import com.dran.web_social.models.User;
+import com.dran.web_social.repositories.ProfileRepository;
 import com.dran.web_social.repositories.UserRepository;
+import com.dran.web_social.services.CloudService;
 import com.dran.web_social.services.UserService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final ProfileRepository profileRepository;
+    private final CloudService cloudService; // Thêm dependency
 
     @Override
     public UserResponse getUserById(Long id) {
@@ -66,9 +72,8 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(
                         () -> new RuntimeException("Không tìm thấy người dùng có tài khoản: " + req.getUserName()));
 
-        // Update user information
+        // Update user basic information
         if (req.getEmail() != null && !req.getEmail().equals(user.getEmail())) {
-            // Check if email is already used by another user
             if (userRepository.existsByEmail(req.getEmail())) {
                 throw new RuntimeException("Email này đã được sử dụng bởi người dùng khác");
             }
@@ -92,7 +97,14 @@ public class UserServiceImpl implements UserService {
         }
 
         if (req.getAvatar() != null) {
-            user.setAvatar(req.getAvatar());
+            // Upload avatar image to cloud
+            try {
+                Map<String, String> uploadResult = cloudService.uploadFile(req.getAvatar());
+                user.setAvatar(uploadResult.get("url"));
+            } catch (Exception e) {
+                log.error("Failed to upload avatar image", e);
+                throw new RuntimeException("Lỗi khi upload ảnh avatar");
+            }
         }
 
         if (req.getGender() != null) {
@@ -108,6 +120,44 @@ public class UserServiceImpl implements UserService {
                 throw new RuntimeException("Định dạng ngày sinh không hợp lệ. Vui lòng sử dụng định dạng yyyy-MM-dd");
             }
         }
+
+        // Update or create profile information
+        Profile profile = user.getProfile();
+        if (profile == null) {
+            profile = Profile.builder()
+                    .user(user)
+                    .followersCount(0)
+                    .followingCount(0)
+                    .postsCount(0)
+                    .build();
+        }
+
+        if (req.getBio() != null) {
+            profile.setBio(req.getBio());
+        }
+
+        if (req.getBanner() != null) {
+            // Upload banner image to cloud
+            try {
+                Map<String, String> uploadResult = cloudService.uploadFile(req.getBanner());
+                profile.setBanner(uploadResult.get("url"));
+            } catch (Exception e) {
+                log.error("Failed to upload banner image", e);
+                throw new RuntimeException("Lỗi khi upload ảnh banner");
+            }
+        }
+
+        if (req.getWebsite() != null) {
+            profile.setWebsite(req.getWebsite());
+        }
+
+        if (req.getLocation() != null) {
+            profile.setLocation(req.getLocation());
+        }
+
+        // Save profile first
+        profileRepository.save(profile);
+        user.setProfile(profile);
 
         // Save updated user
         User updatedUser = userRepository.save(user);

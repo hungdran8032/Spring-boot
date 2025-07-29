@@ -15,10 +15,17 @@ public class UserResponse {
     private String phone;
     private String address;
     private String avatar;
-    private String role;
+    // private String role;
     private String gender;
     private String birthDay;
     private boolean enabled;
     private boolean isVerified;
     private Set<String> roles;
+    private String bio;
+    private String banner;
+    private String website;
+    private String location;
+    private Integer followersCount;
+    private Integer followingCount;
+    private Integer postsCount;
 }

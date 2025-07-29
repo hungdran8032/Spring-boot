@@ -23,14 +23,9 @@ public class PasswordController {
     // Của user
     @PostMapping("/change")
     public ResponseEntity<String> changePassword(
-            // Authentication authentication,
             @AuthenticationPrincipal User user,
             @Valid @RequestBody ChangePasswordRequest request) {
-        // Authentication authentication =
-        // SecurityContextHolder.getContext().getAuthentication();
-        // String currentUsername = authentication.getName();
         passwordService.changePassword(user.getUsername(), request);
-        // passwordService.changePassword(currentUsername, request);
         return ResponseEntity.ok("{\"message\": \"Mật khẩu đã được thay đổi thành công\"}");
     }
 

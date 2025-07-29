@@ -127,11 +127,13 @@ public class AuthController {
                 .phone(user.getPhone())
                 .address(user.getAddress())
                 .avatar(user.getAvatar())
-                .role(user.getUserRoles().stream()
-                        .map(role -> role.getRole().getName())
-                        .collect(Collectors.joining(", ")))
                 .gender(user.getGender())
                 .birthDay(user.getBirthDay() != null ? dateFormat.format(user.getBirthDay()) : null)
+                .enabled(user.isEnabled())
+                .isVerified(user.isVerified())
+                .roles(user.getUserRoles().stream()
+                        .map(role -> role.getRole().getName())
+                        .collect(Collectors.toSet()))
                 .build();
 
         return ResponseEntity.ok(userResponse);

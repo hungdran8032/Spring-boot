@@ -7,14 +7,14 @@ import { Plus } from "lucide-react"
 import CreatePostModal from "@/components/feed/create-post-modal"
 
 interface FloatingActionButtonProps {
-  onCreatePost: (content: string, image: string | null) => void
+  onCreatePost: (post: any) => void
 }
 
 export default function FloatingActionButton({ onCreatePost }: FloatingActionButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const handleCreatePost = (content: string, image: string | null) => {
-    onCreatePost(content, image)
+  const handleCreatePost = (post: any) => {
+    onCreatePost(post)
     setIsModalOpen(false)
   }
 
@@ -39,3 +39,4 @@ export default function FloatingActionButton({ onCreatePost }: FloatingActionBut
     </>
   )
 }
+

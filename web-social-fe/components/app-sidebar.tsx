@@ -132,6 +132,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      
+        
       <SidebarRail />
     </Sidebar>
   )

@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Calendar, MapPin, LinkIcon, MessageSquare, UserPlus, MoreHorizontal } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { profileService, UserProfile } from "@/lib/profile-service"
+import { useAuth } from "@/contexts/AuthContext"
+import Link from 'next/link'
 
 interface ProfileHeaderProps {
   username: string
@@ -12,114 +15,178 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ username }: ProfileHeaderProps) {
   const [isFollowing, setIsFollowing] = useState(false)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const { user: currentUser } = useAuth()
 
-  // Mock user data - in a real app, this would come from an API
-  const user = {
-    name: "John Doe",
-    username: username,
-    avatar: "/placeholder.svg?height=120&width=120",
-    coverImage: "/placeholder.svg?height=300&width=1200",
-    bio: "Software developer and designer. Passionate about creating beautiful user experiences.",
-    location: "San Francisco, CA",
-    website: "johndoe.com",
-    joinedDate: "January 2020",
-    following: 245,
-    followers: 1024,
-    posts: 358,
+  const isOwnProfile = currentUser?.userName === username
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const profile = await profileService.getUserProfile(username)
+        setUserProfile(profile)
+        
+        // Format joinedDate if birthDay exists
+        if (profile.birthDay) {
+          const joinedDate = new Date(profile.birthDay).toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric'
+          })
+          setUserProfile(prev => prev ? {...prev, joinedDate} : null)
+        }
+      } catch (error: any) {
+        console.error('Failed to fetch profile:', error)
+        if (error.response?.status === 404) {
+          setUserProfile(null) // User not found
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [username])
+
+  const handleFollow = async () => {
+    try {
+      if (isFollowing) {
+        await profileService.unfollowUser(username)
+      } else {
+        await profileService.followUser(username)
+      }
+      setIsFollowing(!isFollowing)
+    } catch (error) {
+      console.error('Failed to follow/unfollow:', error)
+    }
+  }
+
+  if (loading) {
+    return <div className="mb-6 animate-pulse">Loading...</div>
+  }
+
+  if (!userProfile) {
+    return (
+      <div className="mb-6 text-center py-12">
+        <h2 className="text-2xl font-bold mb-2">User not found</h2>
+        <p className="text-muted-foreground">The user @{username} does not exist.</p>
+      </div>
+    )
   }
 
   return (
     <div className="mb-6">
       {/* Cover image */}
       <div className="relative h-48 md:h-64 rounded-xl overflow-hidden">
-        <img src={user.coverImage || "/placeholder.svg"} alt="Cover" className="w-full h-full object-cover" />
+        <img 
+          src={userProfile.banner || "/placeholder.svg?height=300&width=1200"} 
+          alt="Cover" 
+          className="w-full h-full object-cover" 
+        />
       </div>
 
       {/* Profile info */}
       <div className="relative px-4">
         <div className="flex justify-between">
           <Avatar className="absolute -top-16 ring-4 ring-background h-32 w-32">
-            <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+            <AvatarImage src={userProfile.avatar || "/placeholder.svg"} alt={`${userProfile.firstName} ${userProfile.lastName}`} />
+            <AvatarFallback>
+              {userProfile.firstName?.charAt(0)}{userProfile.lastName?.charAt(0)}
+            </AvatarFallback>
           </Avatar>
 
-          <div className="ml-auto mt-4 flex gap-2">
-            <Button variant="outline" size="sm">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Message
-            </Button>
-            <Button
-              size="sm"
-              variant={isFollowing ? "outline" : "default"}
-              onClick={() => setIsFollowing(!isFollowing)}
-            >
-              {isFollowing ? (
-                "Following"
-              ) : (
-                <>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Follow
-                </>
-              )}
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Share profile</DropdownMenuItem>
-                <DropdownMenuItem>Block user</DropdownMenuItem>
-                <DropdownMenuItem>Report</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {isOwnProfile ? (
+            <div className="ml-auto mt-4">
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/settings">
+                  Edit Profile
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="ml-auto mt-4 flex gap-2">
+              <Button variant="outline" size="sm">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Message
+              </Button>
+              <Button
+                size="sm"
+                variant={isFollowing ? "outline" : "default"}
+                onClick={handleFollow}
+              >
+                {isFollowing ? (
+                  "Following"
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Follow
+                  </>
+                )}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Share profile</DropdownMenuItem>
+                  <DropdownMenuItem>Block user</DropdownMenuItem>
+                  <DropdownMenuItem>Report</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </div>
 
         <div className="mt-16">
-          <h1 className="text-2xl font-bold">{user.name}</h1>
-          <p className="text-muted-foreground">@{user.username}</p>
+          <h1 className="text-2xl font-bold">
+            {userProfile.firstName} {userProfile.lastName}
+          </h1>
+          <p className="text-muted-foreground">@{userProfile.userName}</p>
 
-          <p className="mt-3">{user.bio}</p>
+          {userProfile.bio && <p className="mt-3">{userProfile.bio}</p>}
 
           <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
-            {user.location && (
+            {userProfile.location && (
               <div className="flex items-center">
                 <MapPin className="mr-1 h-4 w-4" />
-                {user.location}
+                {userProfile.location}
               </div>
             )}
-            {user.website && (
+            {userProfile.website && (
               <div className="flex items-center">
                 <LinkIcon className="mr-1 h-4 w-4" />
                 <a
-                  href={`https://${user.website}`}
+                  href={`https://${userProfile.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  {user.website}
+                  {userProfile.website}
                 </a>
               </div>
             )}
-            <div className="flex items-center">
-              <Calendar className="mr-1 h-4 w-4" />
-              Joined {user.joinedDate}
-            </div>
+            {userProfile.joinedDate && (
+              <div className="flex items-center">
+                <Calendar className="mr-1 h-4 w-4" />
+                Joined {userProfile.joinedDate}
+              </div>
+            )}
           </div>
 
           <div className="mt-4 flex gap-4">
             <div>
-              <span className="font-bold">{user.following}</span>{" "}
+              <span className="font-bold">{userProfile.followingCount || 0}</span>{" "}
               <span className="text-muted-foreground">Following</span>
             </div>
             <div>
-              <span className="font-bold">{user.followers}</span>{" "}
+              <span className="font-bold">{userProfile.followersCount || 0}</span>{" "}
               <span className="text-muted-foreground">Followers</span>
             </div>
             <div>
-              <span className="font-bold">{user.posts}</span> <span className="text-muted-foreground">Posts</span>
+              <span className="font-bold">{userProfile.postsCount || 0}</span>{" "}
+              <span className="text-muted-foreground">Posts</span>
             </div>
           </div>
         </div>
@@ -127,3 +194,9 @@ export default function ProfileHeader({ username }: ProfileHeaderProps) {
     </div>
   )
 }
+
+
+
+
+
+

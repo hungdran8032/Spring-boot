@@ -2,15 +2,15 @@ package com.dran.web_social.controllers;
 
 import com.dran.web_social.dto.request.UpdateUserRequest;
 import com.dran.web_social.dto.response.UserResponse;
+import com.dran.web_social.models.User;
 import com.dran.web_social.services.UserService;
 
-import jakarta.validation.Valid;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -34,16 +34,48 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
 
-    @PutMapping("/update-profile")
-    public ResponseEntity<UserResponse> updateProfile(@Valid @RequestBody UpdateUserRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUsername = authentication.getName();
+    @PutMapping(value = "/update-profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<UserResponse> updateUser(
+            @AuthenticationPrincipal User user,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName,
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false) MultipartFile avatar, // Thêm avatar
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) String birthDay,
+            @RequestParam(required = false) String bio,
+            @RequestParam(required = false) MultipartFile banner,
+            @RequestParam(required = false) String website,
+            @RequestParam(required = false) String location) {
 
-        // Ensure the username in the request matches the authenticated user
-        if (!request.getUserName().equals(currentUsername)) {
-            throw new RuntimeException("Không thể cập nhật hồ sơ của người dùng khác");
-        }
+        UpdateUserRequest request = UpdateUserRequest.builder()
+                .userName(user.getUsername())
+                .email(email)
+                .firstName(firstName)
+                .lastName(lastName)
+                .phone(phone)
+                .address(address)
+                .avatar(avatar)
+                .gender(gender)
+                .birthDay(birthDay)
+                .bio(bio)
+                .banner(banner)
+                .website(website)
+                .location(location)
+                .build();
 
         return ResponseEntity.ok(userService.updateUser(request));
+    }
+
+    @GetMapping("/profile/{username}")
+    public ResponseEntity<UserResponse> getUserProfile(@PathVariable String username) {
+        return ResponseEntity.ok(userService.getUserByUserName(username));
+    }
+
+    @GetMapping("/my-profile")
+    public ResponseEntity<UserResponse> getMyProfile(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(userService.getUserByUserName(user.getUsername()));
     }
 }

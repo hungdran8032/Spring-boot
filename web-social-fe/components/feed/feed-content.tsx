@@ -1,144 +1,302 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
-import { ImageIcon } from "lucide-react"
+import { ImageIcon, Smile, MapPin, Users, Calendar, Music, Video, Mic, X, Loader2 } from "lucide-react"
 import PostCard from "@/components/feed/post-card"
 import FloatingActionButton from "@/components/floating-action-button"
-
-// Mock data for posts
-const mockPosts = [
-  {
-    id: "1",
-    user: {
-      name: "John Doe",
-      username: "johndoe",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    content:
-      "Just launched my new website! Check it out and let me know what you think. It's been months of hard work and I'm finally ready to share it with the world! 🚀",
-    image: "/placeholder.svg?height=400&width=600",
-    likes: 24,
-    comments: 5,
-    createdAt: "2h ago",
-  },
-  {
-    id: "2",
-    user: {
-      name: "Jane Smith",
-      username: "janesmith",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    content:
-      "Beautiful sunset at the beach today! 🌅 Nature never fails to amaze me. #nature #sunset #beach #photography",
-    image: "/placeholder.svg?height=400&width=600",
-    likes: 56,
-    comments: 8,
-    createdAt: "4h ago",
-  },
-  {
-    id: "3",
-    user: {
-      name: "Alex Johnson",
-      username: "alexj",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    content:
-      "Working on a new project with the team. Excited to share more details soon! The collaboration has been amazing and we're making great progress. Stay tuned for updates! 💪",
-    image: null,
-    likes: 18,
-    comments: 3,
-    createdAt: "6h ago",
-  },
-  {
-    id: "4",
-    user: {
-      name: "Sarah Wilson",
-      username: "sarahw",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-    content:
-      "Coffee and code - the perfect combination for a productive morning! ☕️ Working on some exciting new features that I can't wait to release.",
-    image: "/placeholder.svg?height=400&width=600",
-    likes: 32,
-    comments: 12,
-    createdAt: "8h ago",
-  },
-]
+import { PostService } from "@/lib/post-service"
+import { PostResponse } from "@/lib/post-service"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 
 export default function FeedContent() {
   const [newPostContent, setNewPostContent] = useState("")
-  const [posts, setPosts] = useState(mockPosts)
+  const [posts, setPosts] = useState<PostResponse[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { user } = useAuth()
+  const { toast } = useToast()
 
-  const handleCreatePost = () => {
-    if (!newPostContent.trim()) return
-
-    const newPost = {
-      id: `${Date.now()}`,
-      user: {
-        name: "Current User",
-        username: "currentuser",
-        avatar: "/placeholder.svg?height=40&width=40",
-      },
-      content: newPostContent,
-      image: null,
-      likes: 0,
-      comments: 0,
-      createdAt: "Just now",
+  // Load posts on component mount
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const response = await PostService.getAllPosts()
+        setPosts(response.content)
+      } catch (error) {
+        console.error('Failed to load posts:', error)
+      }
     }
+    loadPosts()
+  }, [])
 
-    setPosts([newPost, ...posts])
-    setNewPostContent("")
+  const handleCreatePost = async () => {
+    if (!newPostContent.trim() && selectedFiles.length === 0) return
+
+    setIsSubmitting(true)
+    try {
+      const postRequest = {
+        content: newPostContent.trim()
+      }
+
+      const newPost = await PostService.createPost(postRequest, selectedFiles)
+      
+      setPosts([newPost, ...posts])
+      setNewPostContent("")
+      setSelectedFiles([])
+      setPreviewUrls([])
+      
+      toast({
+        title: "Success",
+        description: "Post created successfully!"
+      })
+    } catch (error: any) {
+      console.error('Failed to create post:', error)
+      
+      let errorMessage = "Failed to create post. Please try again."
+      if (error.response?.status === 413 || error.message?.includes("10MB")) {
+        errorMessage = "Kích thước file vượt quá giới hạn cho phép (10MB)"
+      }
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleCreatePostFromModal = (content: string, image: string | null) => {
-    const newPost = {
-      id: `${Date.now()}`,
-      user: {
-        name: "Current User",
-        username: "currentuser",
-        avatar: "/placeholder.svg?height=40&width=40",
-      },
-      content,
-      image,
-      likes: 0,
-      comments: 0,
-      createdAt: "Just now",
-    }
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || [])
+    if (files.length === 0) return
 
+    const validFiles = files.filter(file => {
+      const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/')
+      const isValidSize = file.size <= 10 * 1024 * 1024 // 10MB limit
+      
+      if (!isValidType) {
+        toast({
+          variant: "destructive",
+          title: "Invalid file type",
+          description: "Only images and videos are allowed."
+        })
+        return false
+      }
+      
+      if (!isValidSize) {
+        toast({
+          variant: "destructive",
+          title: "File too large",
+          description: "File size must be less than 10MB."
+        })
+        return false
+      }
+      
+      return true
+    })
+
+    if (validFiles.length === 0) return
+
+    setSelectedFiles(prev => [...prev, ...validFiles])
+    const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file))
+    setPreviewUrls(prev => [...prev, ...newPreviewUrls])
+  }
+
+  const removeFile = (index: number) => {
+    URL.revokeObjectURL(previewUrls[index])
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const actionButtons = [
+    { 
+      icon: ImageIcon, 
+      label: "Photo", 
+      color: "text-green-600 hover:bg-green-50",
+      action: () => {
+        if (fileInputRef.current) {
+          fileInputRef.current.accept = "image/*"
+          fileInputRef.current.click()
+        }
+      }
+    },
+    { 
+      icon: Video, 
+      label: "Video", 
+      color: "text-blue-600 hover:bg-blue-50",
+      action: () => {
+        if (fileInputRef.current) {
+          fileInputRef.current.accept = "video/*"
+          fileInputRef.current.click()
+        }
+      }
+    },
+    { 
+      icon: Smile, 
+      label: "Feeling", 
+      color: "text-yellow-600 hover:bg-yellow-50",
+      action: () => console.log("Add feeling/activity")
+    },
+    { 
+      icon: MapPin, 
+      label: "Check in", 
+      color: "text-red-600 hover:bg-red-50",
+      action: () => console.log("Add location")
+    },
+    { 
+      icon: Users, 
+      label: "Tag friends", 
+      color: "text-purple-600 hover:bg-purple-50",
+      action: () => console.log("Tag people")
+    },
+    { 
+      icon: Calendar, 
+      label: "Event", 
+      color: "text-indigo-600 hover:bg-indigo-50",
+      action: () => console.log("Create event")
+    },
+    { 
+      icon: Music, 
+      label: "Music", 
+      color: "text-pink-600 hover:bg-pink-50",
+      action: () => console.log("Add music")
+    },
+    { 
+      icon: Mic, 
+      label: "Live", 
+      color: "text-red-500 hover:bg-red-50",
+      action: () => console.log("Go live")
+    }
+  ]
+
+  const handleCreatePostFromModal = (newPost: any) => {
     setPosts([newPost, ...posts])
+  }
+
+  const handleDeletePost = (postId: number) => {
+    setPosts(prev => prev.filter(post => post.id !== postId))
+  }
+
+  const handleUpdatePost = (updatedPost: any) => {
+    setPosts(prev => prev.map(post => 
+      post.id === updatedPost.id ? updatedPost : post
+    ))
   }
 
   return (
     <div className="space-y-6 pb-20">
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* Create Post Section */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <Card className="p-4">
           <div className="flex gap-3">
             <Avatar>
-              <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-              <AvatarFallback>CU</AvatarFallback>
+              <AvatarImage src={user?.avatar || "/placeholder.svg?height=40&width=40"} alt="User" />
+              <AvatarFallback>
+                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-3">
               <Textarea
-                placeholder="What's on your mind?"
+                placeholder={`What's on your mind, ${user?.firstName}?`}
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
                 className="resize-none border-0 focus-visible:ring-0 text-base placeholder:text-muted-foreground"
                 rows={3}
+                disabled={isSubmitting}
               />
-              <div className="flex justify-between items-center pt-2 border-t">
-                <Button variant="outline" size="sm">
-                  <ImageIcon className="h-4 w-4 mr-2" />
-                  Photo
-                </Button>
-                <Button size="sm" onClick={handleCreatePost} disabled={!newPostContent.trim()}>
-                  Post
-                </Button>
+
+              {/* File Previews */}
+              <AnimatePresence>
+                {previewUrls.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    {previewUrls.map((url, index) => (
+                      <div key={index} className="relative rounded-lg overflow-hidden">
+                        {selectedFiles[index]?.type.startsWith('video/') ? (
+                          <video
+                            src={url}
+                            className="w-full h-32 object-cover"
+                            controls
+                          />
+                        ) : (
+                          <img
+                            src={url}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-32 object-cover"
+                          />
+                        )}
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 shadow-md"
+                          onClick={() => removeFile(index)}
+                          disabled={isSubmitting}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="pt-2 border-t space-y-3">
+                {/* Action Buttons Grid */}
+                <div className="grid grid-cols-4 gap-2">
+                  {actionButtons.map((button, index) => (
+                    <Button
+                      key={index}
+                      variant="ghost"
+                      size="sm"
+                      className={`flex flex-col items-center gap-1 h-auto py-2 px-1 ${button.color} transition-colors`}
+                      onClick={button.action}
+                      disabled={isSubmitting}
+                    >
+                      <button.icon className="h-5 w-5" />
+                      <span className="text-xs font-medium">{button.label}</span>
+                    </Button>
+                  ))}
+                </div>
+
+                {/* Post Button */}
+                <div className="flex justify-end">
+                  <Button 
+                    size="sm" 
+                    onClick={handleCreatePost} 
+                    disabled={(!newPostContent.trim() && selectedFiles.length === 0) || isSubmitting}
+                    className="px-6"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Posting...
+                      </>
+                    ) : (
+                      "Post"
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -146,21 +304,46 @@ export default function FeedContent() {
       </motion.div>
 
       {/* Posts Feed */}
-      <AnimatePresence>
-        {posts.map((post, index) => (
-          <motion.div
+      <div className="space-y-6">
+        {posts.map((post) => (
+          <PostCard
             key={post.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: index * 0.1 }}
-          >
-            <PostCard post={post} />
-          </motion.div>
+            post={{
+              id: post.id.toString(),
+              user: {
+                name: post.userFullName,
+                username: post.userName,
+                avatar: post.userAvatar || "/placeholder.svg?height=40&width=40"
+              },
+              content: post.content,
+              image: post.media?.[0]?.url || null,
+              images: post.media?.map(m => m.url),
+              likes: 0,
+              comments: 0,
+              createdAt: new Date(post.createAt).toLocaleDateString()
+            }}
+            onDeletePost={handleDeletePost}
+            onUpdatePost={handleUpdatePost}
+          />
         ))}
-      </AnimatePresence>
+      </div>
 
       {/* Floating Action Button */}
       <FloatingActionButton onCreatePost={handleCreatePostFromModal} />
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

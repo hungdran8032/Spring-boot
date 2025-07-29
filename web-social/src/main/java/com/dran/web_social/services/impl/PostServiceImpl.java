@@ -3,6 +3,7 @@ package com.dran.web_social.services.impl;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -83,23 +84,37 @@ public class PostServiceImpl implements PostService {
         User user = userRepository.findByUserName(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với tên: " + username));
 
-        return postRepository.findByUserId(user.getId(), pageable)
-                .map(postMapper::postToPostResponse);
+        Page<Post> posts = postRepository.findByUserId(user.getId(), pageable);
+        return posts.map(postMapper::postToPostResponse);
     }
 
     @Override
     @Transactional
     public PostResponse updatePost(String username, Long postId, PostRequest request, List<MultipartFile> files) {
+        User user = userRepository.findByUserName(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với tên: " + username));
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài viết với ID: " + postId));
-
-        if (!post.getUser().getUsername().equals(username)) {
+        if (!post.getUser().getUsername().equals(user.getUsername())) {
             throw new AccessDeniedException("Bạn không có quyền cập nhật bài viết này");
         }
-
-        post.setContent(request.getContent());
-
+        if (request.getContent() != null) {
+            post.setContent(request.getContent());
+        }
+        // Xóa tất cả media cũ nếu có media mới được upload
         if (files != null && !files.isEmpty()) {
+            // Xóa media cũ trên Cloudinary
+            post.getMedia().forEach(media -> {
+                if (media.getPublicId() != null) {
+                    cloudService.deleteFile(media.getPublicId());
+                }
+            });
+
+            // Xóa media cũ khỏi database
+            mediaRepository.deleteAll(post.getMedia());
+            post.getMedia().clear();
+
+            // Thêm media mới
             List<Media> mediaList = uploadMediaFiles(files, post);
             post.getMedia().addAll(mediaList);
         }
@@ -110,25 +125,36 @@ public class PostServiceImpl implements PostService {
         return postMapper.postToPostResponse(updatedPost);
     }
 
-    @Override
     @Transactional
-    public void deletePost(String username, Long postId) {
+    @Override
+    public void deletePost(User user, Long postId) {
+
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài viết với ID: " + postId));
 
-        if (!post.getUser().getUsername().equals(username)) {
-            throw new AccessDeniedException("Bạn không có quyền xóa bài viết này");
+        if (!post.getUser().getUsername().equals(user.getUsername())) {
+            throw new AccessDeniedException("Bạn không có quyền cập nhật bài viết này");
         }
 
-        // Xóa tất cả media liên quan trên Cloudinary
-        post.getMedia().forEach(media -> {
-            if (media.getPublicId() != null) {
-                cloudService.deleteFile(media.getPublicId());
+        // Xóa tất cả media liên quan trên Cloudinary trước
+        if (post.getMedia() != null && !post.getMedia().isEmpty()) {
+            for (Media media : post.getMedia()) {
+                if (media.getPublicId() != null) {
+                    try {
+                        cloudService.deleteFile(media.getPublicId());
+                    } catch (Exception e) {
+                        log.error("Failed to delete media with publicId: {} for postId: {}",
+                                media.getPublicId(),
+                                postId, e);
+                        throw new RuntimeException("Failed to delete media for postId: " + postId,
+                                e);
+                    }
+                }
             }
-        });
+        }
+        postRepository.deleteMediaByPostId(postId);
+        postRepository.deletePostById(postId);
 
-        postRepository.delete(post);
-        log.info("Đã xóa bài viết với ID: {}", postId);
     }
 
     private List<Media> uploadMediaFiles(List<MultipartFile> files, Post post) {
