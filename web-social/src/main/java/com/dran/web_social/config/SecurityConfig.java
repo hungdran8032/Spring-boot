@@ -39,7 +39,8 @@ public class SecurityConfig {
             "/api/v1/users/**",
             "/webjars/**",
             "/api/v1/password/**",
-            "/api/v1/posts/**"
+            "/api/v1/posts/**",
+            "/api/v1/profile/**"
     };
 
     private final String[] BLACK_LIST = {

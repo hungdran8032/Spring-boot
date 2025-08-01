@@ -15,9 +15,15 @@ public interface PostService {
 
     PostResponse getPostById(Long id);
 
+    PostResponse getPostByIdWithLikeStatus(Long id, String username);
+
     Page<PostResponse> getAllPosts(Pageable pageable);
 
+    Page<PostResponse> getAllPostsWithLikeStatus(Pageable pageable, String username);
+
     Page<PostResponse> getPostsByUser(String username, Pageable pageable);
+
+    Page<PostResponse> getPostsByUserWithLikeStatus(String username, Pageable pageable, String currentUsername);
 
     PostResponse updatePost(String username, Long postId, PostRequest request, List<MultipartFile> files);
 

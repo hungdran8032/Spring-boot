@@ -133,12 +133,12 @@ export default function CreatePostModal({ isOpen, onClose, onCreatePost }: Creat
   }
 
   const actionButtons = [
-    { icon: ImageIcon, label: "Photo/Video", action: handleImageSelect },
-    { icon: Smile, label: "Emoji", action: () => console.log("Emoji picker") },
-    { icon: MapPin, label: "Location", action: () => console.log("Location picker") },
-    { icon: Users, label: "Tag people", action: () => console.log("Tag people") },
-    { icon: Calendar, label: "Event", action: () => console.log("Create event") },
-    { icon: Music, label: "Music", action: () => console.log("Add music") },
+    { icon: ImageIcon, label: "Ảnh/Video", action: handleImageSelect },
+    { icon: Smile, label: "Cảm xúc", action: () => console.log("Emoji picker") },
+    { icon: MapPin, label: "Vị trí", action: () => console.log("Location picker") },
+    { icon: Users, label: "Gắn thẻ", action: () => console.log("Tag people") },
+    { icon: Calendar, label: "Sự kiện", action: () => console.log("Create event") },
+    { icon: Music, label: "Nhạc", action: () => console.log("Add music") },
   ]
 
   return (
@@ -156,7 +156,7 @@ export default function CreatePostModal({ isOpen, onClose, onCreatePost }: Creat
         <DialogContent className="sm:max-w-[600px] w-[95vw] max-h-[90vh] p-0 flex flex-col rounded-2xl shadow-lg z-50">
           {/* Header - Fixed */}
           <DialogHeader className="flex-shrink-0 p-4 sm:p-6 pb-0 border-b">
-            <DialogTitle className="text-lg font-semibold">Create new post</DialogTitle>
+            <DialogTitle className="text-lg font-semibold">Đăng bài</DialogTitle>
           </DialogHeader>
 
           {/* Content area - Scrollable */}
@@ -178,7 +178,7 @@ export default function CreatePostModal({ isOpen, onClose, onCreatePost }: Creat
 
                 <Textarea
                   autoFocus
-                  placeholder="What's happening?"
+                  placeholder="Đăng bài gì hế?"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   className="min-h-[120px] sm:min-h-[150px] resize-none border-0 focus-visible:ring-0 text-base sm:text-lg placeholder:text-muted-foreground"
@@ -268,7 +268,7 @@ export default function CreatePostModal({ isOpen, onClose, onCreatePost }: Creat
                 className="px-4 sm:px-6"
                 disabled={isSubmitting}
               >
-                Cancel
+                Huỷ
               </Button>
               <Button 
                 onClick={handleSubmit} 
@@ -276,7 +276,7 @@ export default function CreatePostModal({ isOpen, onClose, onCreatePost }: Creat
                 className="px-4 sm:px-6"
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Posting..." : "Post"}
+                {isSubmitting ? "Đang đăng..." : "Đăng"}
               </Button>
             </div>
           </div>

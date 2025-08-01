@@ -23,21 +23,21 @@ export function AppSidebar() {
   const pathname = usePathname()
 
   const mainNavItems = [
-    { href: "/", icon: Home, label: "Home" },
-    { href: "/search", icon: Search, label: "Search" },
-    { href: "/notifications", icon: Bell, label: "Notifications" },
-    { href: "/messages", icon: MessageSquare, label: "Messages" },
-    { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
-    { href: "/profile/username", icon: User, label: "Profile" },
+    { href: "/", icon: Home, label: "Trang chủ" },
+    { href: "/search", icon: Search, label: "Tìm kiếm" },
+    { href: "/notifications", icon: Bell, label: "Thông báo" },
+    { href: "/messages", icon: MessageSquare, label: "Tin nhắn" },
+    { href: "/bookmarks", icon: Bookmark, label: "Lưu" },
+    { href: "/my-profile", icon: User, label: "Hồ sơ" },
   ]
 
   const discoverItems = [
-    { href: "/trending", icon: TrendingUp, label: "Trending" },
-    { href: "/communities", icon: Users, label: "Communities" },
-    { href: "/hashtags", icon: Hash, label: "Hashtags" },
+    { href: "/trending", icon: TrendingUp, label: "Xu hướng" },
+    { href: "/communities", icon: Users, label: "Cộng đồng" },
+    { href: "/hashtags", icon: Hash, label: "Hashtag" },
   ]
 
-  const settingsItems = [{ href: "/settings", icon: Settings, label: "Settings" }]
+  const settingsItems = [{ href: "/settings", icon: Settings, label: "Cài đặt" }]
 
   return (
     <Sidebar collapsible="icon" className="border-r bg-background">
@@ -47,10 +47,11 @@ export function AppSidebar() {
             <SidebarMenuButton size="lg" asChild>
               <Link href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <span className="font-bold text-lg">SC</span>
+                  {/* <span className="font-bold text-lg">EL</span> */}
+                  <img src="/logo.png" alt="Logo" className="h-8 w-8" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">SocialConnect</span>
+                  <span className="font-semibold">Echo Link</span>
                   <span className="text-xs text-muted-foreground">Social Network</span>
                 </div>
               </Link>
@@ -61,7 +62,7 @@ export function AppSidebar() {
 
       <SidebarContent className="bg-background overflow-hidden">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Điều hướng</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => {
@@ -89,7 +90,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Discover</SidebarGroupLabel>
+          <SidebarGroupLabel>Khám phá</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {discoverItems.map((item) => {
@@ -111,7 +112,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Settings</SidebarGroupLabel>
+          <SidebarGroupLabel>Cài đặt</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {settingsItems.map((item) => {

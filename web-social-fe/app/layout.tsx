@@ -10,9 +10,9 @@ import AppLayout from "@/components/app-layout"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "SkyBlue",
-  description: "Professional authentication system with Next.js and shadcn/ui",
-    generator: 'v0.dev'
+  title: "EchoLink",
+  icons: "/logo.png",
+  description: "Social media platform",
 }
 
 export default function RootLayout({

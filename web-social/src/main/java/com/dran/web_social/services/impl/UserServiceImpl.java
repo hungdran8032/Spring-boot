@@ -3,9 +3,7 @@ package com.dran.web_social.services.impl;
 import com.dran.web_social.dto.request.UpdateUserRequest;
 import com.dran.web_social.dto.response.UserResponse;
 import com.dran.web_social.mappers.UserMapper;
-import com.dran.web_social.models.Profile;
 import com.dran.web_social.models.User;
-import com.dran.web_social.repositories.ProfileRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.CloudService;
 import com.dran.web_social.services.UserService;
@@ -17,6 +15,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final ProfileRepository profileRepository;
     private final CloudService cloudService; // Thêm dependency
 
     @Override
@@ -67,10 +66,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserResponse updateUser(UpdateUserRequest req) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Chưa đăng nhập");
+        }
+
+        String currentUsername = authentication.getName(); // lấy username từ token
+        User user = userRepository.findByUserName(currentUsername)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng có tài khoản: " + currentUsername));
         // Get current user
-        User user = userRepository.findByUserName(req.getUserName())
-                .orElseThrow(
-                        () -> new RuntimeException("Không tìm thấy người dùng có tài khoản: " + req.getUserName()));
 
         // Update user basic information
         if (req.getEmail() != null && !req.getEmail().equals(user.getEmail())) {
@@ -121,43 +125,12 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        // Update or create profile information
-        Profile profile = user.getProfile();
-        if (profile == null) {
-            profile = Profile.builder()
-                    .user(user)
-                    .followersCount(0)
-                    .followingCount(0)
-                    .postsCount(0)
-                    .build();
-        }
-
-        if (req.getBio() != null) {
-            profile.setBio(req.getBio());
-        }
-
-        if (req.getBanner() != null) {
-            // Upload banner image to cloud
-            try {
-                Map<String, String> uploadResult = cloudService.uploadFile(req.getBanner());
-                profile.setBanner(uploadResult.get("url"));
-            } catch (Exception e) {
-                log.error("Failed to upload banner image", e);
-                throw new RuntimeException("Lỗi khi upload ảnh banner");
-            }
-        }
-
-        if (req.getWebsite() != null) {
-            profile.setWebsite(req.getWebsite());
-        }
-
-        if (req.getLocation() != null) {
-            profile.setLocation(req.getLocation());
-        }
-
-        // Save profile first
-        profileRepository.save(profile);
-        user.setProfile(profile);
+        // if (req.getUserName() != null) {
+        // if (userRepository.existsByUserName(req.getUserName())) {
+        // throw new RuntimeException("Tên người dùng này đã tồn tại");
+        // }
+        // user.setUserName(req.getUserName());
+        // }
 
         // Save updated user
         User updatedUser = userRepository.save(user);

@@ -66,7 +66,7 @@ export function ForgotPasswordForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="you@example.com" {...field} disabled={isLoading} />
+                <Input placeholder="Email của bạn" {...field} disabled={isLoading} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -3,7 +3,7 @@ import Link from "next/link"
 import { ForgotPasswordForm } from "./forgot-password-form"
 
 export const metadata: Metadata = {
-  title: "Forgot Password",
+  title: "Quên mật khẩu",
   description: "Request a password reset link",
 }
 
@@ -11,14 +11,14 @@ export default function ForgotPasswordPage() {
   return (
     <div className="mx-auto max-w-md w-full space-y-6">
       <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-bold">Forgot Password</h1>
-        <p className="text-muted-foreground">Enter your email to receive a password reset link</p>
+        <h1 className="text-3xl font-bold">Quên mật khẩu</h1>
+        <p className="text-muted-foreground">Nhập email để đặt lại mật khẩu</p>
       </div>
       <ForgotPasswordForm />
       <div className="text-center text-sm">
-        Remember your password?{" "}
+        Nhớ mật khẩu?{" "}
         <Link href="/login" className="underline underline-offset-4 hover:text-primary">
-          Back to login
+          Quay lại trang đăng nhập
         </Link>
       </div>
     </div>

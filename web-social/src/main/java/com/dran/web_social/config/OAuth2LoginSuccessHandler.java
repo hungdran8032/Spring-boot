@@ -1,6 +1,8 @@
 package com.dran.web_social.config;
 
 import com.dran.web_social.dto.response.AuthResponse;
+import com.dran.web_social.mappers.ProfileMapper;
+import com.dran.web_social.models.Profile;
 import com.dran.web_social.models.RefreshToken;
 import com.dran.web_social.models.Role;
 import com.dran.web_social.models.User;
@@ -46,6 +48,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtConfig jwtConfig;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ProfileMapper profileMapper;
 
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpiration;
@@ -76,8 +79,6 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             String email = (String) attributes.get("email");
             String name = (String) attributes.get("name");
-            Boolean emailVerified = (Boolean) attributes.get("email_verified");
-
             if (email == null) {
                 log.error("Email is null in OAuth2 attributes");
                 response.setContentType("application/json");
@@ -85,6 +86,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 response.getWriter().write("{\"error\": \"Email not found in OAuth2 attributes\"}");
                 return;
             }
+            String username = email.split("@")[0];
+            Boolean emailVerified = (Boolean) attributes.get("email_verified");
 
             // Check if user exists
             Optional<User> userOptional = userRepository.findByEmail(email);
@@ -97,7 +100,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 // Create new user
                 user = User.builder()
                         .email(email)
-                        .userName(email) // Use email as username
+                        .userName(username) // Use email as username
                         .password(encodedPassword)
                         .enabled(true)
                         .isVerified(emailVerified != null ? emailVerified : true)
@@ -121,6 +124,10 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                         .build();
 
                 user.getUserRoles().add(userRole);
+
+                Profile profile = profileMapper.createDefaultProfile(user);
+                user.setProfile(profile);
+
                 userRepository.save(user);
                 userRoleRepository.save(userRole);
             } else {

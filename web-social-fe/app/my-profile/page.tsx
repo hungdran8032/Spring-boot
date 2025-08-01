@@ -20,7 +20,7 @@ export default function MyProfilePage() {
   }, [user, loading, router])
 
   if (loading) {
-    return <div className="container py-6">Loading...</div>
+    return <div className="container py-6">Đang tải...</div>
   }
 
   return null

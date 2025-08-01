@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -54,17 +53,29 @@ public class PostController {
         return ResponseEntity.ok(postService.getPostById(id));
     }
 
+    @GetMapping("/{id}/with-like-status")
+    public ResponseEntity<PostResponse> getPostByIdWithLikeStatus(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(postService.getPostByIdWithLikeStatus(id, user.getUsername()));
+    }
+
     @GetMapping
     public ResponseEntity<Page<PostResponse>> getAllPosts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String direction) {
+            @RequestParam(defaultValue = "desc") String direction,
+            @AuthenticationPrincipal User user) {
 
         Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        return ResponseEntity.ok(postService.getAllPosts(pageable));
+        if (user != null) {
+            return ResponseEntity.ok(postService.getAllPostsWithLikeStatus(pageable, user.getUsername()));
+        } else {
+            return ResponseEntity.ok(postService.getAllPosts(pageable));
+        }
     }
 
     @GetMapping("/user/{username}")
@@ -73,13 +84,21 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String direction) {
+            @RequestParam(defaultValue = "desc") String direction,
+            @AuthenticationPrincipal User currentUser) {
 
         try {
             Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
             Pageable pageable = PageRequest.of(page, size, sort);
-            Page<PostResponse> posts = postService.getPostsByUser(username, pageable);
-            return ResponseEntity.ok(posts);
+
+            if (currentUser != null) {
+                Page<PostResponse> posts = postService.getPostsByUserWithLikeStatus(username, pageable,
+                        currentUser.getUsername());
+                return ResponseEntity.ok(posts);
+            } else {
+                Page<PostResponse> posts = postService.getPostsByUser(username, pageable);
+                return ResponseEntity.ok(posts);
+            }
         } catch (ResourceNotFoundException e) {
             // Return empty page instead of error
             return ResponseEntity.ok(Page.empty());
@@ -103,6 +122,18 @@ public class PostController {
             @PathVariable("id") Long id) {
         postService.deletePost(user, id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/with-like-status")
+    public ResponseEntity<Page<PostResponse>> getAllPostsWithLikeStatus(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction,
+            @AuthenticationPrincipal User user) {
+        Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return ResponseEntity.ok(postService.getAllPostsWithLikeStatus(pageable, user.getUsername()));
     }
 
 }

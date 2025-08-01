@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { authService } from "@/lib/auth-service";
+import { Eye, EyeOff } from "lucide-react";
 
 // Define validation schema
 const formSchema = z.object({
@@ -49,12 +49,12 @@ export function LoginForm() {
       // console.log(auth);
 
        toast({
-           title: "Login successful",
-           description: "You have been successfully logged in",
+           title: "Đăng nhập thành công",
+           description: "Bạn đã đăng nhập thành công",
        });
       router.push("/"); // redirect home
     } catch (error) {
-      toast({ title: "Login failed", variant: "destructive" });
+      toast({ title: "Đăng nhập thất bại", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -87,7 +87,7 @@ export function LoginForm() {
             {/* svg icon Google ở đây */}
           </svg>
         )}
-        Sign in with Google
+        Đăng nhập với Google
       </Button>
 
       <div className="relative">
@@ -95,7 +95,7 @@ export function LoginForm() {
           <Separator className="w-full" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          <span className="bg-background px-2 text-muted-foreground">Hoặc đăng nhập với</span>
         </div>
       </div>
 
@@ -106,9 +106,9 @@ export function LoginForm() {
             name="userName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>Tên đăng nhập</FormLabel>
                 <FormControl>
-                  <Input placeholder="johndoe" {...field} />
+                  <Input placeholder="Tên đăng nhập của bạn" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -117,23 +117,40 @@ export function LoginForm() {
           <FormField
             control={form.control}
             name="password"
-            render={({ field }) => (
-              <FormItem>
-                <div className="flex items-center justify-between">
-                  <FormLabel>Password</FormLabel>
-                  <Link
-                    href="/forgot-password"
-                    className="ml-auto inline-block text-sm text-muted-foreground hover:text-primary"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              const [showPassword, setShowPassword] = useState(false);
+              return (
+                <FormItem>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Mật khẩu</FormLabel>
+                    <Link
+                      href="/forgot-password"
+                      className="ml-auto inline-block text-sm text-muted-foreground hover:text-primary"
+                    >
+                      Quên mật khẩu?
+                    </Link>
+                  </div>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        {...field}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
           <FormField
             control={form.control}
@@ -144,7 +161,7 @@ export function LoginForm() {
                   <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>Remember me</FormLabel>
+                  <FormLabel>Ghi nhớ đăng nhập</FormLabel>
                 </div>
               </FormItem>
             )}
@@ -153,12 +170,12 @@ export function LoginForm() {
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                Đang đăng nhập...
               </>
             ) : (
               <>
                 <Mail className="mr-2 h-4 w-4" />
-                Sign in with Username
+                Đăng nhập
               </>
             )}
           </Button>

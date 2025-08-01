@@ -3,8 +3,8 @@ import { motion } from "framer-motion"
 import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import PostCard from "@/components/feed/post-card"
-import { profileService } from "@/lib/profile-service"
-import { PostResponse } from "@/lib/post-service"
+import { ProfileResponse, profileService } from "@/lib/profile-service"
+import { PostResponse, PostService } from "@/lib/post-service"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CreatePostModal from "@/components/feed/create-post-modal"
@@ -17,6 +17,10 @@ export default function ProfileTabs({ username }: ProfileTabsProps) {
   const [posts, setPosts] = useState<PostResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+
+  const [userProfile, setUserProfile] = useState<ProfileResponse | null>(null)
+
+  
 
   const handleCreatePost = (newPost: any) => {
     setPosts([newPost, ...posts])
@@ -32,7 +36,7 @@ export default function ProfileTabs({ username }: ProfileTabsProps) {
     const fetchUserPosts = async () => {
       try {
         setLoading(true)
-        const response = await profileService.getUserPosts(username)
+        const response = await PostService.getPostsByUser(username)
         setPosts(response.content || [])
       } catch (error) {
         console.error('Failed to fetch user posts:', error)
@@ -75,14 +79,14 @@ export default function ProfileTabs({ username }: ProfileTabsProps) {
   const handleDeletePost = (postId: number) => {
     setPosts(prev => prev.filter(post => post.id !== postId))
   }
-
+  
   return (
     <>
       <Tabs defaultValue="posts" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="posts">Posts</TabsTrigger>
-          <TabsTrigger value="media">Media</TabsTrigger>
-          <TabsTrigger value="likes">Likes</TabsTrigger>
+          <TabsTrigger value="posts">Bài đăng</TabsTrigger>
+          <TabsTrigger value="media">Phương tiện</TabsTrigger>
+          <TabsTrigger value="likes">Lượt thích</TabsTrigger>
         </TabsList>
         
         <TabsContent value="posts" className="space-y-4">
@@ -94,20 +98,7 @@ export default function ProfileTabs({ username }: ProfileTabsProps) {
             posts.map((post) => (
               <PostCard 
                 key={post.id} 
-                post={{
-                  id: post.id.toString(),
-                  user: {
-                    name: post.userFullName,
-                    username: post.userName,
-                    avatar: post.userAvatar || "/placeholder.svg?height=40&width=40"
-                  },
-                  content: post.content,
-                  image: post.media?.[0]?.url || null,
-                  images: post.media?.map(m => m.url),
-                  likes: 0, // TODO: Add likes count from backend
-                  comments: 0, // TODO: Add comments count from backend
-                  createdAt: new Date(post.createAt).toLocaleDateString()
-                }}
+                post={posts.find(p => p.id === post.id)!}
                 onDeletePost={handleDeletePost}
                 onUpdatePost={handleUpdatePost}
               />
@@ -148,7 +139,22 @@ export default function ProfileTabs({ username }: ProfileTabsProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
             >
-              <PostCard post={post} />
+              <PostCard post={{
+                id: Number(post.id),
+                content: post.content,
+                userName: post.user.username,
+                userFullName: post.user.name,
+                userAvatar: post.user.avatar,
+                createAt: post.createdAt,
+                updateAt: post.createdAt,
+                media: post.image ? [{
+                  id: 1,
+                  url: post.image,
+                  type: "image"
+                }] : [],
+                isLiked: false,
+                likesCount: post.likes
+              }} />
             </motion.div>
           ))}
         </TabsContent>

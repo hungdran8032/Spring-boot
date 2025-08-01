@@ -1,45 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Heart, MessageCircle, Share2, MoreHorizontal, Send, X, ChevronLeft, ChevronRight, Trash2, Edit } from "lucide-react"
+import { Heart, MessageCircle, Share2, MoreHorizontal, Send, X, ChevronLeft, ChevronRight, Trash2, Edit, EyeOff, AlertTriangle, BookMarked } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import Comment from "@/components/feed/comment"
+import { CommentData } from "@/components/feed/comment"
 import { useAuth } from "@/contexts/AuthContext"
-import { PostService } from "@/lib/post-service"
+import { PostCardProps, PostService } from "@/lib/post-service"
 import { useToast } from "@/hooks/use-toast"
 import EditPostModal from "@/components/feed/edit-post-modal"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
+import Link from "next/link"
+import { LikeService } from "@/lib/like-service"
+import { boolean } from "zod"
 
-interface PostCardProps {
-  post: {
-    id: string
-    user: {
-      name: string
-      username: string
-      avatar: string
-    }
-    content: string
-    image: string | null
-    images?: string[]
-    likes: number
-    comments: number
-    createdAt: string
-  }
-  onDeletePost?: (postId: number) => void
-  onUpdatePost?: (updatedPost: any) => void
-}
 
 export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardProps) {
   const { user } = useAuth()
   const { toast } = useToast()
-  const [liked, setLiked] = useState(false)
-  const [likesCount, setLikesCount] = useState(post.likes)
+  const [liked, setLiked] = useState<Boolean>(post.isLiked || false)
+  const [likesCount, setLikesCount] = useState<number>(post.likesCount || 0)
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [showImageModal, setShowImageModal] = useState(false)
@@ -47,54 +33,48 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [comments, setComments] = useState([
-    {
-      id: "1",
-      user: {
-        name: "Jane Smith",
-        username: "janesmith",
-        avatar: "/placeholder.svg?height=32&width=32",
-      },
-      content: "Great post! Thanks for sharing this.",
-      likes: 3,
-      createdAt: "2h ago",
-      replies: [
-        {
-          id: "1-1",
-          user: {
-            name: "John Doe",
-            username: "johndoe",
-            avatar: "/placeholder.svg?height=32&width=32",
-          },
-          content: "I totally agree with you!",
-          likes: 1,
-          createdAt: "1h ago",
-          replies: [],
-        },
-      ],
-    },
-    {
-      id: "2",
-      user: {
-        name: "Mike Johnson",
-        username: "mikej",
-        avatar: "/placeholder.svg?height=32&width=32",
-      },
-      content: "This is exactly what I was looking for. Thank you!",
-      likes: 5,
-      createdAt: "3h ago",
-      replies: [],
-    },
-  ])
-  const [postData, setPostData] = useState(post)
+  const [comments, setComments] = useState<CommentData[]>([])
+  const [postData, setPostData] = useState({
+    ...post,
+    media: post.media || []
+  })
+  const [isLiking, setIsLiking] = useState(false)
 
-  const handleLike = () => {
-    if (liked) {
-      setLikesCount(likesCount - 1)
-    } else {
-      setLikesCount(likesCount + 1)
+  // Create stable dependencies for useEffect
+  const postDependencies = useMemo(() => ({
+    isLiked: post.isLiked,
+    likesCount: post.likesCount || 0,
+    media: post.media || []
+  }), [post.isLiked, post.likesCount, post.media])
+  
+  useEffect(() => {
+    setLiked(postDependencies.isLiked)
+    setLikesCount(postDependencies.likesCount)
+    setPostData({
+      ...post,
+      media: postDependencies.media
+    })
+  }, [postDependencies, post])
+
+  const handleLike = async () => {
+    if (isLiking) return
+    
+    setIsLiking(true)
+    try {
+      const response = await LikeService.toggleLikePost(post.id)
+      
+      console.log("Like response:", response)
+      setLiked(response.liked)
+      setLikesCount(response.likesCount)
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Lỗi",
+        description: "Không thể thích bài viết"
+      })
+    } finally {
+      setIsLiking(false)
     }
-    setLiked(!liked)
   }
 
   const handleComment = () => {
@@ -122,12 +102,14 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
   }
 
   const openImageModal = (index: number) => {
-    setCurrentImageIndex(index)
-    setShowImageModal(true)
+    if (post.media && post.media.length > index) {
+      setCurrentImageIndex(index)
+      setShowImageModal(true)
+    }
   }
 
   const nextImage = () => {
-    if (post.images && currentImageIndex < post.images.length - 1) {
+    if (post.media && post.media.length > 0 && currentImageIndex < post.media.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1)
     }
   }
@@ -168,14 +150,15 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
     setPostData({
       ...postData,
       content: updatedPost.content,
-      images: updatedPost.media?.map((m: any) => m.url) || []
+      media: updatedPost.media || []
     })
     
     // Gọi callback từ parent component
     onUpdatePost?.(updatedPost)
   }
 
-  const isOwner = user?.userName === post.user.username
+  const isOwner = user?.userName === post.userName
+  // console.log(liked)
 
   return (
     <>
@@ -183,14 +166,20 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
         <CardHeader className="p-4 pb-0">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={post.user.avatar || "/placeholder.svg"} alt={post.user.name} />
-                <AvatarFallback>{post.user.name.charAt(0)}</AvatarFallback>
+              <Link href={`/${post.userName}`}>
+              <Avatar >
+                <AvatarImage src={post.userAvatar || "/placeholder.svg"} alt={post.userFullName} />
+                <AvatarFallback>{post.userFullName.charAt(0)}</AvatarFallback>
               </Avatar>
+              </Link>
               <div>
-                <p className="font-medium">{post.user.name}</p>
+                 <Link href={`/${post.userName}`}>
+                  <p className="font-medium hover:underline cursor-pointer">{post.userFullName}</p>
+                </Link>
                 <p className="text-sm text-muted-foreground">
-                  @{post.user.username} · {post.createdAt}
+                  <Link href={`/${post.userName}`} className="hover:underline">
+                    @{post.userName}
+                  </Link> · {new Date(post.createAt).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -201,22 +190,31 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Save post</DropdownMenuItem>
-                <DropdownMenuItem>Report</DropdownMenuItem>
-                <DropdownMenuItem>Hide</DropdownMenuItem>
+                <DropdownMenuItem>
+                  <BookMarked className="h-4 w-4 mr-2" />
+                  Lưu
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Báo cáo
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Ẩn
+                </DropdownMenuItem>
                 {isOwner && (
                   <>
-                    <DropdownMenuSeparator />
+                    {/* <DropdownMenuSeparator /> */}
                     <DropdownMenuItem onClick={handleEditPost}>
                       <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                      Chỉnh sửa
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                       onClick={() => setShowDeleteDialog(true)}
                       className="text-red-600 focus:text-red-600"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      Xoá
                     </DropdownMenuItem>
                   </>
                 )}
@@ -227,36 +225,36 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
 
         <CardContent className="p-4">
           <p className="whitespace-pre-wrap mb-3">{postData.content}</p>
-          {postData.images && postData.images.length > 0 && (
+          {postData.media && postData.media.length > 0 && (
             <div className="rounded-md overflow-hidden mt-3">
-              {postData.images.length === 1 ? (
+              {postData.media.length === 1 ? (
                 <img 
-                  src={postData.images[0]} 
+                  src={postData.media[0]?.url} 
                   alt="Post image" 
                   className="w-full h-auto object-cover max-h-96 cursor-pointer hover:opacity-90 transition-opacity" 
                   onClick={() => openImageModal(0)}
                 />
               ) : (
                 <div className={`grid gap-1 ${
-                  postData.images.length === 2 ? 'grid-cols-2' : 
-                  postData.images.length === 3 ? 'grid-cols-2' :
+                  postData.media.length === 2 ? 'grid-cols-2' : 
+                  postData.media.length === 3 ? 'grid-cols-2' :
                   'grid-cols-2'
                 }`}>
-                  {postData.images.slice(0, 4).map((image, index) => (
+                  {postData.media.slice(0, 4).map((image, index) => (
                     <div key={index} className="relative">
                       <img 
-                        src={image} 
+                        src={image?.url} 
                         alt={`Post image ${index + 1}`} 
                         className={`w-full h-32 object-cover cursor-pointer hover:opacity-90 transition-opacity ${
-                          postData.images && postData.images.length === 3 && index === 0 ? 'row-span-2 h-full' : ''
+                          postData.media && postData.media.length === 3 && index === 0 ? 'row-span-2 h-full' : ''
                         }`}
                         onClick={() => openImageModal(index)}
                       />
-                      {index === 3 && postData.images && postData.images.length > 4 && (
+                      {index === 3 && postData.media && postData.media.length > 4 && (
                         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center cursor-pointer"
                              onClick={() => openImageModal(index)}>
                           <span className="text-white font-semibold text-lg">
-                            +{postData.images.length - 4}
+                            +{postData.media.length - 4}
                           </span>
                         </div>
                       )}
@@ -271,7 +269,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
         <CardFooter className="p-4 pt-0 flex flex-col">
           <div className="flex items-center justify-between w-full border-t pt-3">
             <Button variant="ghost" size="sm" className="gap-2" onClick={handleLike}>
-              <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : ""}`} />
+              <Heart className={`h-5 w-5 ${liked == true ? "fill-red-500 text-red-500" : ""}`} />
               <span>{likesCount}</span>
             </Button>
 
@@ -282,7 +280,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
 
             <Button variant="ghost" size="sm" className="gap-2" onClick={handleShare}>
               <Share2 className="h-5 w-5" />
-              <span>Share</span>
+              <span>Chia sẻ</span>
             </Button>
           </div>
 
@@ -295,13 +293,17 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
                 className="w-full mt-4 pt-4 border-t"
               >
                 <div className="flex gap-3 mb-4">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                    <AvatarFallback>CU</AvatarFallback>
-                  </Avatar>
+                  <Link href={`/${user?.userName}`}>
+                    <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
+                      <AvatarImage src={user?.avatar || "/placeholder.svg"} />
+                      <AvatarFallback>
+                        {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Link>
                   <div className="flex-1 flex gap-2">
                     <Input
-                      placeholder="Add a comment..."
+                      placeholder="Viết bình luận..."
                       value={commentText}
                       onChange={(e) => setCommentText(e.target.value)}
                       className="flex-1"
@@ -326,7 +328,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
         <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
           <DialogContent className="max-w-4xl max-h-[90vh] p-0">
             <DialogTitle className="sr-only">
-              Post image {currentImageIndex + 1} of {post.images?.length || 1}
+              Post image {currentImageIndex + 1} of {post.media?.length || 1}
             </DialogTitle>
             <div className="relative">
               <Button
@@ -338,7 +340,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
                 <X className="h-4 w-4" />
               </Button>
               
-              {post.images && post.images.length > 1 && (
+              {post.media && post.media.length > 1 && (
                 <>
                   <Button
                     variant="ghost"
@@ -355,24 +357,24 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
                     size="icon"
                     className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white"
                     onClick={nextImage}
-                    disabled={!post.images || currentImageIndex === post.images.length - 1}
+                    disabled={!post.media || currentImageIndex === post.media.length - 1}
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </>
               )}
               
-              {post.images && (
+              {post.media && (
                 <img
-                  src={post.images[currentImageIndex]}
+                  src={post.media[currentImageIndex]?.url}
                   alt={`Post image ${currentImageIndex + 1}`}
                   className="w-full h-auto max-h-[85vh] object-contain"
                 />
               )}
               
-              {post.images && post.images.length > 1 && (
+              {post.media && post.media.length > 1 && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                  {currentImageIndex + 1} / {post.images.length}
+                  {currentImageIndex + 1} / {post.media.length}
                 </div>
               )}
             </div>
@@ -384,9 +386,9 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         post={{
-          id: postData.id,
+          id: postData.id.toString(),
           content: postData.content,
-          images: postData.images
+          images: postData.media?.map(m => m.url) || []
         }}
         onUpdatePost={handleUpdatePost}
       />
@@ -405,6 +407,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
     </>
   )
 }
+
 
 
 

@@ -19,7 +19,9 @@ import com.dran.web_social.dto.request.LoginRequest;
 import com.dran.web_social.dto.request.RefreshTokenRequest;
 import com.dran.web_social.dto.request.RegisterRequest;
 import com.dran.web_social.dto.response.AuthResponse;
+import com.dran.web_social.mappers.ProfileMapper;
 import com.dran.web_social.mappers.UserMapper;
+import com.dran.web_social.models.Profile;
 import com.dran.web_social.models.RefreshToken;
 import com.dran.web_social.models.Role;
 import com.dran.web_social.models.User;
@@ -48,6 +50,8 @@ public class AuthServiceImpl implements AuthService {
         private final JwtConfig jwtConfig;
         private final AuthenticationManager authenticationManager;
         private final VerificationTokenService verificationTokenService;
+        private final ProfileMapper profileMapper;
+
         @Value("${jwt.refresh.expiration}")
         private long refreshTokenExpiration;
 
@@ -60,9 +64,12 @@ public class AuthServiceImpl implements AuthService {
                 user.setUserRoles(new HashSet<>());
                 user.setEnabled(false);
                 user.setVerified(false);
+
                 Role role = roleService.getRoleByName("USER");
                 UserRole user_role = UserRole.builder().user(user).role(role).build();
                 user.getUserRoles().add(user_role);
+                Profile profile = profileMapper.createDefaultProfile(user);
+                user.setProfile(profile); // Gắn profile vào người dùng
                 User savedUser = userRepository.save(user);
                 userRoleRepository.save(user_role);
 

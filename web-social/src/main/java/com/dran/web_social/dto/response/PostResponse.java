@@ -3,6 +3,8 @@ package com.dran.web_social.dto.response;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,4 +23,9 @@ public class PostResponse {
     private Date createAt;
     private Date updateAt;
     private List<MediaResponse> media;
+    @JsonProperty("isLiked")
+    private boolean isLiked;
+    private int likesCount;
+    private int commentsCount;
+    private int sharesCount;
 }

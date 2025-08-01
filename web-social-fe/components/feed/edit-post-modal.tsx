@@ -127,7 +127,7 @@ export default function EditPostModal({ isOpen, onClose, post, onUpdatePost }: E
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Post</DialogTitle>
+            <DialogTitle>Chỉnh sửa bài viết</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -229,12 +229,12 @@ export default function EditPostModal({ isOpen, onClose, post, onUpdatePost }: E
                 className="text-green-600 hover:bg-green-50"
               >
                 <ImageIcon className="h-4 w-4 mr-2" />
-                Add Photo/Video
+                Thêm ảnh/video
               </Button>
 
               <div className="flex gap-2">
                 <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-                  Cancel
+                  Huỷ
                 </Button>
                 <Button 
                   onClick={handleSubmit}
@@ -243,10 +243,10 @@ export default function EditPostModal({ isOpen, onClose, post, onUpdatePost }: E
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
+                      Đang cập nhật...
                     </>
                   ) : (
-                    "Update Post"
+                    "Cập nhật"
                   )}
                 </Button>
               </div>

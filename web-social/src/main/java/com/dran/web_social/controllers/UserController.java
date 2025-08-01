@@ -42,13 +42,9 @@ public class UserController {
             @RequestParam(required = false) String lastName,
             @RequestParam(required = false) String phone,
             @RequestParam(required = false) String address,
-            @RequestParam(required = false) MultipartFile avatar, // Thêm avatar
+            @RequestParam(required = false) MultipartFile avatar,
             @RequestParam(required = false) String gender,
-            @RequestParam(required = false) String birthDay,
-            @RequestParam(required = false) String bio,
-            @RequestParam(required = false) MultipartFile banner,
-            @RequestParam(required = false) String website,
-            @RequestParam(required = false) String location) {
+            @RequestParam(required = false) String birthDay) {
 
         UpdateUserRequest request = UpdateUserRequest.builder()
                 .userName(user.getUsername())
@@ -60,10 +56,6 @@ public class UserController {
                 .avatar(avatar)
                 .gender(gender)
                 .birthDay(birthDay)
-                .bio(bio)
-                .banner(banner)
-                .website(website)
-                .location(location)
                 .build();
 
         return ResponseEntity.ok(userService.updateUser(request));

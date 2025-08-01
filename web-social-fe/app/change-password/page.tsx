@@ -48,16 +48,16 @@ export default function ChangePasswordPage() {
       // await passwordService.changePassword(values)
       
       toast({
-        title: "Password changed successfully",
-        description: "Your password has been updated.",
+        title: "Đổi mật khẩu thành công",
+        description: "Mật khẩu của bạn đã được cập nhật.",
       })
       
       router.push("/setting")
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Failed to change password",
-        description: "Please check your current password and try again.",
+        title: "Không thể đổi mật khẩu",
+        description: "Vui lòng kiểm tra mật khẩu hiện tại và thử lại.",
       })
     } finally {
       setIsLoading(false)
@@ -69,7 +69,7 @@ export default function ChangePasswordPage() {
       <div className="mb-6">
         <Link href="/settings" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
-          Back to Settings
+          Quay lại cài đặt
         </Link>
       </div>
 
@@ -77,10 +77,10 @@ export default function ChangePasswordPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            Change Password
+            Đổi mật khẩu
           </CardTitle>
           <CardDescription>
-            Enter your current password and choose a new one
+            Nhập mật khẩu hiện tại và chọn mật khẩu mới
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -91,7 +91,7 @@ export default function ChangePasswordPage() {
                 name="currentPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Current Password</FormLabel>
+                    <FormLabel>Mật khẩu hiện tại</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} disabled={isLoading} />
                     </FormControl>
@@ -104,7 +104,7 @@ export default function ChangePasswordPage() {
                 name="newPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>New Password</FormLabel>
+                    <FormLabel>Mật khẩu mới</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} disabled={isLoading} />
                     </FormControl>
@@ -117,7 +117,7 @@ export default function ChangePasswordPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormLabel>Xác nhận mật khẩu mới</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} disabled={isLoading} />
                     </FormControl>
@@ -127,7 +127,7 @@ export default function ChangePasswordPage() {
               />
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Change Password
+                Đổi mật khẩu
               </Button>
             </form>
           </Form>

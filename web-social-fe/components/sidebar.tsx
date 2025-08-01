@@ -11,13 +11,13 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   const navItems = [
-    { href: "/feed", icon: Home, label: "Home" },
-    { href: "/search", icon: Search, label: "Search" },
-    { href: "/notifications", icon: Bell, label: "Notifications" },
-    { href: "/messages", icon: MessageSquare, label: "Messages" },
-    { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
-    { href: "/profile/username", icon: User, label: "Profile" },
-    { href: "/settings", icon: Settings, label: "Settings" },
+    { href: "/feed", icon: Home, label: "Trang chủ" },
+    { href: "/search", icon: Search, label: "Tìm kiếm" },
+    { href: "/notifications", icon: Bell, label: "Thông báo" },
+    { href: "/messages", icon: MessageSquare, label: "Tin nhắn" },
+    { href: "/bookmarks", icon: Bookmark, label: "Lưu" },
+    { href: "/my-profile", icon: User, label: "Trang cá nhân" },
+    { href: "/settings", icon: Settings, label: "Cài đặt" },
   ]
 
   return (
@@ -42,19 +42,6 @@ export default function Sidebar() {
           )
         })}
       </div>
-
-      {/* <div className="mt-6 pt-6 border-t">
-        <div className="flex items-center gap-3 px-2">
-          <Avatar>
-            <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-            <AvatarFallback>UN</AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium">Current User</p>
-            <p className="text-sm text-muted-foreground">@currentuser</p>
-          </div>
-        </div>
-      </div> */}
     </div>
   )
 }

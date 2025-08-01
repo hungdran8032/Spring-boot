@@ -3,7 +3,6 @@ package com.dran.web_social.services.impl;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,8 +22,10 @@ import com.dran.web_social.repositories.MediaRepository;
 import com.dran.web_social.repositories.PostRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.CloudService;
+import com.dran.web_social.services.LikeService;
 import com.dran.web_social.services.MediaService;
 import com.dran.web_social.services.PostService;
+import com.dran.web_social.services.UserService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,8 @@ public class PostServiceImpl implements PostService {
     private final CloudService cloudService;
     private final PostMapper postMapper;
     private final MediaService mediaService;
+    private final LikeService likeService;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -74,9 +77,22 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public PostResponse getPostByIdWithLikeStatus(Long id, String username) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài viết với ID: " + id));
+        return postMapper.postToPostResponseWithLikeStatus(post, username, likeService, userService);
+    }
+
+    @Override
     public Page<PostResponse> getAllPosts(Pageable pageable) {
-        return postRepository.findAll(pageable)
-                .map(postMapper::postToPostResponse);
+        Page<Post> posts = postRepository.findAll(pageable);
+        return posts.map(postMapper::postToPostResponse);
+    }
+
+    @Override
+    public Page<PostResponse> getAllPostsWithLikeStatus(Pageable pageable, String username) {
+        Page<Post> posts = postRepository.findAll(pageable);
+        return posts.map(post -> postMapper.postToPostResponseWithLikeStatus(post, username, likeService, userService));
     }
 
     @Override
@@ -86,6 +102,16 @@ public class PostServiceImpl implements PostService {
 
         Page<Post> posts = postRepository.findByUserId(user.getId(), pageable);
         return posts.map(postMapper::postToPostResponse);
+    }
+
+    @Override
+    public Page<PostResponse> getPostsByUserWithLikeStatus(String username, Pageable pageable, String currentUsername) {
+        User user = userRepository.findByUserName(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với tên: " + username));
+
+        Page<Post> posts = postRepository.findByUserId(user.getId(), pageable);
+        return posts.map(
+                post -> postMapper.postToPostResponseWithLikeStatus(post, currentUsername, likeService, userService));
     }
 
     @Override

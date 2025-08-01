@@ -120,7 +120,7 @@ export default function FeedContent() {
   const actionButtons = [
     { 
       icon: ImageIcon, 
-      label: "Photo", 
+      label: "Hình ảnh",   
       color: "text-green-600 hover:bg-green-50",
       action: () => {
         if (fileInputRef.current) {
@@ -142,37 +142,37 @@ export default function FeedContent() {
     },
     { 
       icon: Smile, 
-      label: "Feeling", 
+      label: "Cảm xúc", 
       color: "text-yellow-600 hover:bg-yellow-50",
       action: () => console.log("Add feeling/activity")
     },
     { 
       icon: MapPin, 
-      label: "Check in", 
+      label: "Vị trí", 
       color: "text-red-600 hover:bg-red-50",
       action: () => console.log("Add location")
     },
     { 
       icon: Users, 
-      label: "Tag friends", 
+      label: "Gắn thẻ", 
       color: "text-purple-600 hover:bg-purple-50",
       action: () => console.log("Tag people")
     },
     { 
       icon: Calendar, 
-      label: "Event", 
+      label: "Sự kiện", 
       color: "text-indigo-600 hover:bg-indigo-50",
       action: () => console.log("Create event")
     },
     { 
       icon: Music, 
-      label: "Music", 
+      label: "Nhạc", 
       color: "text-pink-600 hover:bg-pink-50",
       action: () => console.log("Add music")
     },
     { 
       icon: Mic, 
-      label: "Live", 
+      label: "Trực tiếp", 
       color: "text-red-500 hover:bg-red-50",
       action: () => console.log("Go live")
     }
@@ -214,7 +214,7 @@ export default function FeedContent() {
             </Avatar>
             <div className="flex-1 space-y-3">
               <Textarea
-                placeholder={`What's on your mind, ${user?.firstName}?`}
+                placeholder={`Bạn đang nghĩ gì thế, ${user?.firstName}?`}
                 value={newPostContent}
                 onChange={(e) => setNewPostContent(e.target.value)}
                 className="resize-none border-0 focus-visible:ring-0 text-base placeholder:text-muted-foreground"
@@ -290,10 +290,10 @@ export default function FeedContent() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Posting...
+                        Đang đăng...
                       </>
                     ) : (
-                      "Post"
+                      "Đăng"
                     )}
                   </Button>
                 </div>
@@ -308,20 +308,7 @@ export default function FeedContent() {
         {posts.map((post) => (
           <PostCard
             key={post.id}
-            post={{
-              id: post.id.toString(),
-              user: {
-                name: post.userFullName,
-                username: post.userName,
-                avatar: post.userAvatar || "/placeholder.svg?height=40&width=40"
-              },
-              content: post.content,
-              image: post.media?.[0]?.url || null,
-              images: post.media?.map(m => m.url),
-              likes: 0,
-              comments: 0,
-              createdAt: new Date(post.createAt).toLocaleDateString()
-            }}
+            post={post}
             onDeletePost={handleDeletePost}
             onUpdatePost={handleUpdatePost}
           />
@@ -333,6 +320,7 @@ export default function FeedContent() {
     </div>
   )
 }
+
 
 
 

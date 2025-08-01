@@ -38,11 +38,4 @@ public class UpdateUserRequest {
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "Ngày sinh phải có định dạng yyyy-MM-dd")
     private String birthDay;
 
-    private String bio;
-
-    private String website;
-
-    private String location;
-
-    private MultipartFile banner;
 }

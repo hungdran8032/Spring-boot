@@ -6,12 +6,9 @@ import com.dran.web_social.dto.response.UserResponse;
 import com.dran.web_social.models.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-// import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-
-    // UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "password", ignore = true)
@@ -26,7 +23,7 @@ public interface UserMapper {
     @Mapping(target = "gender", ignore = true)
     @Mapping(target = "birthDay", ignore = true)
     @Mapping(target = "posts", ignore = true)
-    @Mapping(target = "profile", ignore = true) // ignore profile mapping for now
+    @Mapping(target = "profile", ignore = true)
     User registerRequestToUser(RegisterRequest request);
 
     @Mapping(target = "message", constant = "Registration successful")
@@ -41,16 +38,9 @@ public interface UserMapper {
     @Mapping(target = "refreshToken", ignore = true)
     AuthResponse userToLoginAuthResponse(User user);
 
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "userName", source = "username")
-    // @Mapping(target = "role", ignore = true)
     @Mapping(target = "isVerified", source = "verified")
     @Mapping(target = "roles", expression = "java(user.getUserRoles().stream().map(ur -> ur.getRole().getName()).collect(java.util.stream.Collectors.toSet()))")
-    @Mapping(target = "bio", source = "profile.bio")
-    @Mapping(target = "banner", source = "profile.banner")
-    @Mapping(target = "website", source = "profile.website")
-    @Mapping(target = "location", source = "profile.location")
-    @Mapping(target = "followersCount", source = "profile.followersCount")
-    @Mapping(target = "followingCount", source = "profile.followingCount")
-    @Mapping(target = "postsCount", source = "profile.postsCount")
     UserResponse userToUserResponse(User user);
 }

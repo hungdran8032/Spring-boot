@@ -56,7 +56,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="h-8 w-8" />
           <Link href="/" className="hidden sm:block">
-            <span className="font-bold text-lg">SocialConnect</span>
+            <span className="font-bold text-lg">Echo Link</span>
           </Link>
         </div>
 
@@ -66,7 +66,7 @@ export default function Navbar() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search SocialConnect..."
+              placeholder="Tìm kiếm..."
               className="w-full pl-10 pr-4 py-2 bg-muted rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background transition-colors"
             />
           </div>
@@ -81,7 +81,7 @@ export default function Navbar() {
               window.location.href = "/login";
             }}
           >
-            Login
+            Đăng nhập
           </Button>
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           <SidebarTrigger className="h-8 w-8" />
           <Link href="/" className="hidden sm:block">
-            <span className="font-bold text-lg">SocialConnect</span>
+            <span className="font-bold text-lg">Echo Link</span>
           </Link>
         </div>
 
@@ -110,7 +110,7 @@ export default function Navbar() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search SocialConnect..."
+              placeholder="Tìm kiếm..."
               className="w-full pl-10 pr-4 py-2 bg-muted rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background transition-colors"
             />
           </div>
@@ -164,25 +164,25 @@ export default function Navbar() {
               <DropdownMenuItem asChild>
                 <Link href={`/${user.userName}`} className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                  <span>Hồ sơ</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem className="sm:hidden" asChild>
                 <Link href="/notifications" className="cursor-pointer">
                   <Bell className="mr-2 h-4 w-4" />
-                  <span>Notifications</span>
+                  <span>Thông báo</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem className="sm:hidden" asChild>
                 <Link href="/messages" className="cursor-pointer">
                   <MessageSquare className="mr-2 h-4 w-4" />
-                  <span>Messages</span>
+                  <span>Tin nhắn</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <LogOut className="mr-2 h-4 w-4" />
-                <a onClick={handleLogout}><span >Log out</span> </a>
+                <a onClick={handleLogout}><span >Đăng xuất</span> </a>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

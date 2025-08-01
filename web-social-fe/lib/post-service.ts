@@ -6,6 +6,30 @@ export interface PostRequest {
   content: string;
 }
 
+export interface PostUser {
+  name: string
+  username: string
+  avatar: string
+}
+
+export interface Post {
+  id: number
+  user: PostUser
+  content: string
+  image: string | null
+  images?: string[]
+  likesCount: number
+  comments: number
+  isLiked: boolean;
+  createdAt: string
+}
+
+export interface PostCardProps {
+  post: PostResponse
+  onDeletePost?: (postId: number) => void
+  onUpdatePost?: (updatedPost: any) => void
+}
+
 export interface MediaResponse {
   id: number;
   url: string;
@@ -21,6 +45,8 @@ export interface PostResponse {
   createAt: string;
   updateAt: string;
   media: MediaResponse[];
+  isLiked: boolean;
+  likesCount: number;
 }
 
 export interface PaginatedPosts {
@@ -62,14 +88,33 @@ export const PostService = {
         return response.data;
     },
 
+    getPostByIdWithLikeStatus : async (id: number): Promise<PostResponse> => {
+        const token = localStorage.getItem("token");
+        if (token) {
+            const response = await api.get<PostResponse>(`/posts/${id}/with-like-status`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            return response.data;
+        } else {
+            // Fallback to regular endpoint for non-authenticated users
+            return PostService.getPostById(id);
+        }
+    },
+
     getAllPosts : async (
         page = 0,
         size = 10,
         sortBy = "createAt",
         direction: "asc" | "desc" = "desc"
         ): Promise<PaginatedPosts> => {
+        const token = localStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
         const response = await api.get<PaginatedPosts>("/posts", {
             params: { page, size, sortBy, direction },
+            headers,
         });
         return response.data;
     },
@@ -81,8 +126,12 @@ export const PostService = {
         sortBy = "createAt",
         direction: "asc" | "desc" = "desc"
         ): Promise<PaginatedPosts> => {
+        const token = localStorage.getItem("token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        
         const response = await api.get<PaginatedPosts>(`/posts/user/${username}`, {
             params: { page, size, sortBy, direction },
+            headers,
         });
         return response.data;
     },

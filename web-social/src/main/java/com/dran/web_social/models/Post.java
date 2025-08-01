@@ -15,6 +15,9 @@ import lombok.*;
 @Builder
 public class Post extends BaseEntity {
     private String content;
+    private int likesCount;
+    private int commentsCount;
+    private int sharesCount;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -22,4 +25,10 @@ public class Post extends BaseEntity {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Media> media = new HashSet<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<LikePost> likes = new HashSet<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<CommentPost> comments = new HashSet<>();
 }

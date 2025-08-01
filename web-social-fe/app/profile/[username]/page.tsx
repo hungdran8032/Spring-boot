@@ -9,7 +9,7 @@ interface ProfilePageProps {
 }
 
 export const metadata: Metadata = {
-  title: "Profile | SocialConnect",
+  title: "Hồ sơ | EchoLink",
   description: "User profile",
 }
 

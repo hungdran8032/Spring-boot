@@ -14,14 +14,14 @@ export default function Home() {
         {/* right sidebar */}
         <div className="hidden lg:block lg:col-span-1">
           <div className="sticky top-20">
-            <h3 className="font-medium mb-4">Suggested for you</h3>
+            <h3 className="font-medium mb-4">Đề xuất cho bạn</h3>
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 rounded-lg border">
                   <div className="w-10 h-10 rounded-full bg-muted" />
                   <div>
-                    <p className="font-medium">User Name</p>
-                    <p className="text-sm text-muted-foreground">@username</p>
+                    <p className="font-medium">Tên người dùng</p>
+                    <p className="text-sm text-muted-foreground">Tên</p>
                   </div>
                 </div>
               ))}
