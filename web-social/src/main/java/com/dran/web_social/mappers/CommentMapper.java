@@ -4,6 +4,11 @@ import com.dran.web_social.dto.response.CommentResponse;
 import com.dran.web_social.models.CommentPost;
 import com.dran.web_social.services.LikeService;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +26,19 @@ public abstract class CommentMapper {
     @Mapping(target = "parentId", source = "comment.parent.id")
     @Mapping(target = "isLiked", expression = "java(isLikedByCurrentUser(comment, currentUserId))")
     @Mapping(target = "isOwner", expression = "java(isOwner(comment, currentUserId))")
-    @Mapping(target = "replies", ignore = true)
+    @Mapping(target = "replies", expression = "java(mapReplies(comment.getReplies(), currentUserId))")
     public abstract CommentResponse commentToCommentResponse(CommentPost comment, Long currentUserId);
+
+    protected List<CommentResponse> mapReplies(Set<CommentPost> replies, Long currentUserId) {
+        if (replies == null || replies.isEmpty()) {
+            return List.of();
+        }
+        return replies.stream()
+                .filter(reply -> !reply.getDeleted())
+                .map(reply -> commentToCommentResponse(reply, currentUserId))
+                .sorted(Comparator.comparing(CommentResponse::getCreateAt))
+                .collect(Collectors.toList());
+    }
 
     protected String getUsername(CommentPost comment) {
         return comment.getDeleted() ? "[deleted]" : comment.getUser().getUsername();

@@ -52,9 +52,22 @@ public class CommentController {
 
         Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
-        
+
         String currentUsername = user != null ? user.getUsername() : null;
         return ResponseEntity.ok(commentService.getCommentsByPostId(postId, pageable, currentUsername));
+    }
+
+    @GetMapping("/list/post/{postId}")
+    public ResponseEntity<Page<CommentResponse>> getListCommentByPostId(
+            @PathVariable Long postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+        Sort sort = direction.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return ResponseEntity.ok(commentService.getListCommentByPostId(postId, pageable));
     }
 
     @GetMapping("/{commentId}")

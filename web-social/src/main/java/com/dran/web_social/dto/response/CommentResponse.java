@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -32,6 +34,7 @@ public class CommentResponse {
     private List<CommentResponse> replies;
 
     // Current user interaction
+    @JsonProperty("isLiked")
     private boolean isLiked;
     private boolean isOwner;
 

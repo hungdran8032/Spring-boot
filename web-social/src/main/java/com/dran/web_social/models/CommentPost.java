@@ -33,7 +33,7 @@ public class CommentPost extends BaseEntity {
     @JoinColumn(name = "parent_id")
     private CommentPost parent;
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<CommentPost> replies = new HashSet<>();
 
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)

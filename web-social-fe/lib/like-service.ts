@@ -21,7 +21,16 @@ export const LikeService = {
   },
 
   toggleLikeComment: async (commentId: number): Promise<LikeResponse> => {
-    const response = await api.post(`/likes/comment/${commentId}`)
+    const token = localStorage.getItem("token");
+    const response = await api.post<LikeResponse>(
+      `/likes/comment/${commentId}`, 
+      {}, 
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
     return response.data
   },
 

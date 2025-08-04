@@ -87,20 +87,22 @@ public class LikeServiceImpl implements LikeService {
 
         Optional<LikeComment> existingLike = likeCommentRepository.findByCommentIdAndUserId(commentId, user.getId());
 
-        boolean liked;
+        boolean currentLiked;
         if (existingLike.isPresent()) {
             // Unlike
-            // likeCommentRepository.deleteById(existingLike.get().getId());
-            liked = false;
+            LikeComment likeComment = existingLike.get();
+            likeComment.setLiked(!likeComment.isLiked());
+            likeCommentRepository.save(likeComment);
+            currentLiked = likeComment.isLiked(); // ✅ Sửa tại đây
         } else {
             // Like
             LikeComment likeComment = LikeComment.builder()
                     .comment(comment)
                     .user(user)
-                    .liked(true)
+                    .isLiked(true)
                     .build();
             likeCommentRepository.save(likeComment);
-            liked = true;
+            currentLiked = true;
         }
 
         // Đồng bộ likesCount với database thực tế
@@ -109,7 +111,7 @@ public class LikeServiceImpl implements LikeService {
         commentRepository.save(comment);
 
         return LikeResponse.builder()
-                .liked(liked)
+                .liked(currentLiked)
                 .likesCount(actualLikesCount)
                 .build();
     }
@@ -121,7 +123,7 @@ public class LikeServiceImpl implements LikeService {
 
     @Override
     public boolean isCommentLikedByUser(Long commentId, Long userId) {
-        return likeCommentRepository.existsByCommentIdAndUserId(commentId, userId);
+        return likeCommentRepository.findIsLikedByCommentIdAndUserId(commentId, userId).orElse(false);
     }
 
     @Override

@@ -34,6 +34,7 @@ public class CommentServiceImpl implements CommentService {
     private final UserRepository userRepository;
     private final CommentMapper commentMapper;
 
+    // Tạo bình luận cho bài viết
     @Override
     @Transactional
     public CommentResponse createComment(String username, Long postId, CommentRequest request) {
@@ -73,6 +74,7 @@ public class CommentServiceImpl implements CommentService {
         return commentMapper.commentToCommentResponse(savedComment, user.getId());
     }
 
+    // Chỉnh sửa bình luận
     @Override
     @Transactional
     public CommentResponse updateComment(String username, Long commentId, CommentRequest request) {
@@ -92,6 +94,7 @@ public class CommentServiceImpl implements CommentService {
         return commentMapper.commentToCommentResponse(updatedComment, user.getId());
     }
 
+    // Xoá bình luận
     @Override
     @Transactional
     public void deleteComment(String username, Long commentId) {
@@ -105,7 +108,6 @@ public class CommentServiceImpl implements CommentService {
             throw new AccessDeniedException("Bạn không có quyền xóa comment này");
         }
 
-        // Always soft delete to hide replies
         comment.setDeleted(true);
         commentRepository.save(comment);
 
@@ -175,5 +177,25 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy comment với ID: " + commentId));
 
         return commentMapper.commentToCommentResponse(comment, currentUser != null ? currentUser.getId() : null);
+    }
+
+    @Override
+    public Page<CommentResponse> getListCommentByPostId(Long postId, Pageable pageable) {
+        Page<CommentPost> comments = commentRepository.findTopLevelCommentsByPostId(postId, pageable);
+        return comments.map(comment -> {
+            CommentResponse response = commentMapper.commentToCommentResponse(comment, null);
+
+            if (!comment.getDeleted()) {
+                List<CommentPost> replies = commentRepository.findRepliesByParentId(comment.getId());
+                List<CommentResponse> replyResponses = replies.stream()
+                        .map(reply -> commentMapper.commentToCommentResponse(reply, null))
+                        .collect(Collectors.toList());
+                response.setReplies(replyResponses);
+            } else {
+                response.setReplies(List.of());
+            }
+
+            return response;
+        });
     }
 }

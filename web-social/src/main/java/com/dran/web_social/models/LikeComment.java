@@ -12,7 +12,8 @@ import lombok.*;
 @Builder
 // implements Comparable<Comment>
 public class LikeComment extends BaseEntity {
-    private boolean liked;
+    @Column(name = "is_liked", nullable = false)
+    private boolean isLiked;
     @ManyToOne
     @JoinColumn(name = "comment_id")
     private CommentPost comment;
