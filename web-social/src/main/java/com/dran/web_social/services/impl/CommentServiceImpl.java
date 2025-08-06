@@ -11,6 +11,7 @@ import com.dran.web_social.repositories.CommentRepository;
 import com.dran.web_social.repositories.PostRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.CommentService;
+import com.dran.web_social.services.WebSocketService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ public class CommentServiceImpl implements CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentMapper commentMapper;
+    private final WebSocketService webSocketService; // Thêm dependency này
 
     // Tạo bình luận cho bài viết
     @Override
@@ -53,6 +55,17 @@ public class CommentServiceImpl implements CommentService {
                 .deleted(false)
                 .build();
 
+        if (request.getParentId() != null) {
+            CommentPost parentComment = commentRepository.findById(request.getParentId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Không tìm thấy comment cha với ID: " + request.getParentId()));
+            comment.setParent(parentComment);
+            if (parentComment.getParent() == null) {
+                comment.setLevel(1);
+            } else {
+                comment.setLevel(2);
+            }
+        }
         // Handle reply
         if (request.getParentId() != null) {
             CommentPost parentComment = commentRepository.findById(request.getParentId())
@@ -63,6 +76,9 @@ public class CommentServiceImpl implements CommentService {
             // Update replies count
             parentComment.setRepliesCount(parentComment.getRepliesCount() + 1);
             commentRepository.save(parentComment);
+
+        } else {
+            comment.setLevel(0);
         }
 
         CommentPost savedComment = commentRepository.save(comment);
@@ -71,7 +87,12 @@ public class CommentServiceImpl implements CommentService {
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepository.save(post);
 
-        return commentMapper.commentToCommentResponse(savedComment, user.getId());
+        CommentResponse response = commentMapper.commentToCommentResponse(savedComment, user.getId());
+
+        // Gửi thông báo realtime
+        webSocketService.notifyCommentCreated(postId, response, username);
+
+        return response;
     }
 
     // Chỉnh sửa bình luận
@@ -91,7 +112,12 @@ public class CommentServiceImpl implements CommentService {
         comment.setContent(request.getContent());
         CommentPost updatedComment = commentRepository.save(comment);
 
-        return commentMapper.commentToCommentResponse(updatedComment, user.getId());
+        CommentResponse response = commentMapper.commentToCommentResponse(updatedComment, user.getId());
+
+        // Gửi thông báo realtime
+        webSocketService.notifyCommentUpdated(comment.getPost().getId(), response, username);
+
+        return response;
     }
 
     // Xoá bình luận
@@ -108,6 +134,8 @@ public class CommentServiceImpl implements CommentService {
             throw new AccessDeniedException("Bạn không có quyền xóa comment này");
         }
 
+        Long postId = comment.getPost().getId();
+
         comment.setDeleted(true);
         commentRepository.save(comment);
 
@@ -118,12 +146,14 @@ public class CommentServiceImpl implements CommentService {
             commentRepository.save(parent);
         }
 
-        // Update post comments count (count all deleted comments including hidden
-        // replies)
+        // Update post comments count
         Post post = comment.getPost();
         int deletedCount = countDeletedCommentsRecursively(commentId);
         post.setCommentsCount(Math.max(0, post.getCommentsCount() - deletedCount));
         postRepository.save(post);
+
+        // Gửi thông báo realtime
+        webSocketService.notifyCommentDeleted(postId, commentId, username);
     }
 
     private int countDeletedCommentsRecursively(Long commentId) {

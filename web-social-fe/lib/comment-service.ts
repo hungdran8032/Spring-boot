@@ -18,6 +18,7 @@ export interface CommentData {
   isLiked?: boolean
   isOwner?: boolean
   parentId?: number
+  level?: number
 }
 
 export interface CommentProps {
@@ -77,5 +78,23 @@ function toCommentData(response: any): CommentData {
     deleted: isDeleted,
     isLiked: response.isLiked ?? false,
     isOwner: response.isOwner ?? false,
+    parentId: response.parentId?? null,
+    level: response.level?? 0,
   }
+}
+
+export function flattenComments(comments: CommentData[], level = 0): CommentData[] {
+  const result: CommentData[] = []
+
+  for (const comment of comments) {
+    result.push({ ...comment, level }) // giữ level hiện tại
+
+    if (comment.replies && comment.replies.length > 0) {
+      const nextLevel = level >= 2 ? 2 : level + 1
+      const flattenedReplies = flattenComments(comment.replies, nextLevel)
+      result.push(...flattenedReplies)
+    }
+  }
+
+  return result
 }

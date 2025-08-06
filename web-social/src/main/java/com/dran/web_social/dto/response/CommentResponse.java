@@ -29,6 +29,7 @@ public class CommentResponse {
 
     // Parent comment info
     private Long parentId;
+    private int level;
 
     // Replies
     private List<CommentResponse> replies;

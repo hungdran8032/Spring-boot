@@ -15,6 +15,7 @@ import lombok.*;
 @Builder
 public class CommentPost extends BaseEntity {
     private String content;
+    private int level;
     private int likesCount;
     private int repliesCount;
 

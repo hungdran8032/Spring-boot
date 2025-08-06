@@ -1,5 +1,4 @@
-
-"use client"
+ "use client"
 
 import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -33,7 +32,8 @@ import EditPostModal from "@/components/feed/edit-post-modal"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import Link from "next/link"
 import { LikeService } from "@/lib/like-service"
-import { type CommentData, commentService } from "@/lib/comment-service"
+import { type CommentData, commentService, flattenComments } from "@/lib/comment-service"
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardProps) {
   const { user } = useAuth()
@@ -56,7 +56,6 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0)
-
   // Create stable dependencies for useEffect
   const postDependencies = useMemo(
     () => ({
@@ -130,7 +129,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
         const newComment = await commentService.createComment(post.id, commentText)
         setComments([newComment, ...comments])
         setCommentText("")
-        setCommentsCount((prev) => prev + 1) // Giữ nguyên cho bình luận cấp cao nhất
+        setCommentsCount((prev) => prev + 1) 
 
         toast({
           title: "Thành công",
@@ -154,36 +153,55 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
     }
   }
 
-  // Hàm này sẽ cập nhật trạng thái UI của các bình luận lồng nhau
-  const handleAddReply = (newReply: CommentData) => {
-    // XÓA DÒNG NÀY: setCommentsCount(prev => prev + 1)
-
-    const updateNestedReplies = (currentComments: CommentData[], replyToAdd: CommentData): CommentData[] => {
-      return currentComments.map((comment) => {
-        if (comment.id === replyToAdd.parentId) {
-          return {
-            ...comment,
-            replies: [replyToAdd, ...(comment.replies || [])],
-          }
-        }
-        if (comment.replies && comment.replies.length > 0) {
-          return {
-            ...comment,
-            replies: updateNestedReplies(comment.replies, replyToAdd),
-          }
-        }
-        return comment
-      })
-    }
-    setComments((prevComments) => updateNestedReplies(prevComments, newReply))
-  }
-
   // Hàm mới để xử lý thay đổi tổng số bình luận
   const handleTotalCommentCountChange = (delta: number) => {
     setCommentsCount((prev) => prev + delta)
   }
 
-  // ... existing code ...
+  // // WebSocket integration
+  // const { connected } = useWebSocket({
+  //   postId: post.id,
+  //   onCommentCreated: (newComment) => {
+  //     const mappedComment = {
+  //       ...newComment,
+  //       user: {
+  //         name: newComment.userFullName || newComment.userName,
+  //         username: newComment.userName,
+  //         avatar: newComment.userAvatar
+  //       }
+  //     };
+      
+  //     setComments(prev => [mappedComment, ...prev]);
+  //     onUpdatePost?.({
+  //       ...post,
+  //       commentsCount: post.commentsCount + 1
+  //     });
+  //   },
+  //   onCommentUpdated: (updatedComment) => {
+      
+  //     const mappedComment = {
+  //       ...updatedComment,
+  //       user: {
+  //         name: updatedComment.userFullName || updatedComment.userName,
+  //         username: updatedComment.userName,
+  //         avatar: updatedComment.userAvatar
+  //       }
+  //     };
+      
+  //     setComments(prev => 
+  //       prev.map(comment => 
+  //         comment.id === mappedComment.id ? mappedComment : comment
+  //       )
+  //     );
+  //   },
+  //   onCommentDeleted: (deletedCommentId) => {
+  //     setComments(prev => prev.filter(comment => comment.id !== deletedCommentId));
+  //     onUpdatePost?.({
+  //       ...post,
+  //       commentsCount: Math.max(0, post.commentsCount - 1)
+  //     });
+  //   },
+  // });
 
   const handleShare = () => {
     console.log("Sharing post:", post.id)
@@ -425,8 +443,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
                           key={comment.id}
                           comment={comment}
                           postId={post.id}
-                          onAddReply={handleAddReply} // Dùng để cập nhật UI lồng nhau
-                          onCommentCountChange={handleTotalCommentCountChange} // Dùng để cập nhật tổng số bình luận
+                          onCommentCountChange={handleTotalCommentCountChange} 
                         />
                       ))
                     ) : (

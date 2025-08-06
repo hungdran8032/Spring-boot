@@ -166,7 +166,7 @@ export default function Comment({
     }
   }
 
-  const maxLevel = 3 // Giới hạn độ sâu của nested comments
+  const maxLevel = 3// Giới hạn độ sâu của nested comments
 
   return (
     <div className={`${level > 0 ? "ml-8 mt-3" : "mt-4"}`}>
@@ -285,13 +285,13 @@ export default function Comment({
               ))}
             </div>
           )} */}
-          {replies.length > 0 && level < maxLevel && (
+          {replies.length > 0 && (
             <div className="mt-2">
               {replies.map((reply) => (
                 <Comment
                   key={reply.id}
                   comment={reply}
-                  level={comment.id === reply.parentId ? level + 1 : level} 
+                  level={level} 
                   onAddReply={handleNestedReply}
                   postId={postId}
                   onCommentCountChange={onCommentCountChange}

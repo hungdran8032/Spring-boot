@@ -24,6 +24,7 @@ public abstract class CommentMapper {
     @Mapping(target = "userAvatar", expression = "java(getAvatar(comment))")
     @Mapping(target = "content", expression = "java(getContent(comment))")
     @Mapping(target = "parentId", source = "comment.parent.id")
+    @Mapping(target = "level", source = "comment.level")
     @Mapping(target = "isLiked", expression = "java(isLikedByCurrentUser(comment, currentUserId))")
     @Mapping(target = "isOwner", expression = "java(isOwner(comment, currentUserId))")
     @Mapping(target = "replies", expression = "java(mapReplies(comment.getReplies(), currentUserId))")

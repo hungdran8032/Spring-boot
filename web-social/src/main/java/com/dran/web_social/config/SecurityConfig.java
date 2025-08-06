@@ -27,6 +27,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    // private final WebSocketConfig webSocketConfig;
 
     private final String[] WHITE_LIST = {
             "/api/v1/auth/**",
@@ -42,6 +43,11 @@ public class SecurityConfig {
             "/api/v1/posts/**",
             "/api/v1/profile/**",
             "/api/v1/comments/**",
+            "/api/v1/likes/**",
+            "/api/v1/media/**",
+            "/ws/**",
+            "/topic/**",
+            "/queue/**",
     };
 
     private final String[] BLACK_LIST = {
@@ -69,6 +75,7 @@ public class SecurityConfig {
                                 .baseUri("/api/v1/auth/google/callback")))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint))
+
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
