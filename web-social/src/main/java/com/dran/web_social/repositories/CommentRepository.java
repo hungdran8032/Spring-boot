@@ -29,4 +29,10 @@ public interface CommentRepository extends JpaRepository<CommentPost, Long> {
     // Thêm method để lấy tất cả replies (bao gồm cả deleted) để đếm
     @Query("SELECT c FROM CommentPost c WHERE c.parent.id = :parentId")
     List<CommentPost> findAllRepliesByParentId(@Param("parentId") Long parentId);
+
+    @Query("SELECT c FROM CommentPost c WHERE c.parent.id IN :parentIds AND c.deleted = false")
+    List<CommentPost> findAllRepliesByParentIds(@Param("parentIds") List<Long> parentIds);
+
+    @Query("SELECT c FROM CommentPost c WHERE c.post.id = :postId AND c.deleted = false")
+    List<CommentPost> findByPostId(Long postId);
 }

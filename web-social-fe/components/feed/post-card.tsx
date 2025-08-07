@@ -32,7 +32,7 @@ import EditPostModal from "@/components/feed/edit-post-modal"
 import ConfirmDialog from "@/components/ui/confirm-dialog"
 import Link from "next/link"
 import { LikeService } from "@/lib/like-service"
-import { type CommentData, commentService, flattenComments } from "@/lib/comment-service"
+import { type CommentData, commentService } from "@/lib/comment-service"
 import { useWebSocket } from '@/hooks/useWebSocket';
 
 export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardProps) {

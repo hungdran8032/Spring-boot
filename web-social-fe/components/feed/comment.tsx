@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -21,23 +21,17 @@ export default function Comment({
   postId,
   onCommentCountChange,
 }: CommentProps & { postId?: number | string }) {
+  console.log("Rendering comment:", { id: comment.id, level, replies: comment.replies })
   const [liked, setLiked] = useState(comment.isLiked ?? false)
   const [likesCount, setLikesCount] = useState(comment.likes)
   const [showReplyInput, setShowReplyInput] = useState(false)
   const [replyText, setReplyText] = useState("")
-  const [replies, setReplies] = useState<CommentData[]>([])
+  const [replies, setReplies] = useState<CommentData[]>(comment.replies || [])
   const [isLiking, setIsLiking] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(comment.content)
   const { user } = useAuth()
-
-  // Tải replies từ backend nếu có parentId
-  useEffect(() => {
-    if (comment.replies && comment.replies.length > 0) {
-      setReplies(comment.replies)
-    }
-  }, [comment.replies, comment.id, level])
 
   const handleLike = async () => {
     if (isLiking || !user) return
@@ -63,21 +57,17 @@ export default function Comment({
       setIsLoading(true)
       try {
         const newReply = await commentService.createComment(postId, replyText, comment.id)
-
+        console.log("New reply:", newReply)
         if (level >= 2 && onAddReply) {
           onAddReply(newReply, 1)
         } else {
           setReplies([...replies, newReply])
         }
-
-        // QUAN TRỌNG: Thông báo cho PostCard gốc để cập nhật tổng số bình luận
         if (onCommentCountChange) {
           onCommentCountChange(1)
         }
-
         setReplyText("")
         setShowReplyInput(false)
-
         toast({
           title: "Thành công",
           description: "Đã gửi bình luận",
@@ -102,10 +92,8 @@ export default function Comment({
 
   const handleNestedReply = (reply: CommentData, targetLevel: number) => {
     if (targetLevel === 1) {
-      // Thêm vào replies của level hiện tại
       setReplies([...replies, reply])
     } else if (onAddReply) {
-      // Chuyển lên parent
       onAddReply(reply, targetLevel)
     }
   }
@@ -115,15 +103,11 @@ export default function Comment({
 
     try {
       await commentService.deleteComment(comment.id)
-      // Đánh dấu comment đã xóa thay vì xóa khỏi UI
       comment.deleted = true
       comment.content = "Bình luận đã bị xóa"
-
-      // Thông báo cho parent để giảm tổng số bình luận
       if (onCommentCountChange) {
         onCommentCountChange(-1)
       }
-
       toast({
         title: "Thành công",
         description: "Đã xóa bình luận",
@@ -166,14 +150,15 @@ export default function Comment({
     }
   }
 
-  const maxLevel = 3// Giới hạn độ sâu của nested comments
+  const maxLevel = 3
+  const isDeepLevel = level >= 2
 
   return (
-    <div className={`${level > 0 ? "ml-8 mt-3" : "mt-4"}`}>
+    <div className={`${level > 0 ? "ml-8 mt-3 border-l-2 border-gray-200" : "mt-4"}`}>
       <div className="flex gap-3">
         <Avatar className="h-8 w-8">
           <AvatarImage src={comment.user?.avatar || "/placeholder.svg"} alt={comment.user?.name} />
-          {/* <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback> */}
+          <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
           <div className="bg-muted rounded-lg p-3">
@@ -218,7 +203,7 @@ export default function Comment({
               >
                 <MessageCircle className="h-3 w-3 mr-1" />
                 Trả lời
-                {level >= 2 && <span className="ml-1 text-xs text-blue-600">Thread</span>}
+                {/* {isDeepLevel && <span className="ml-1 text-xs text-blue-600"></span>} */}
               </Button>
             )}
 
@@ -271,8 +256,8 @@ export default function Comment({
             )}
           </AnimatePresence>
 
-          {/* {replies.length > 0 && (
-            <div className="mt-2">
+          {replies.length > 0 && (
+            <div className="mt-2 border-l-2 border-gray-200 pl-4">
               {replies.map((reply) => (
                 <Comment
                   key={reply.id}
@@ -280,26 +265,11 @@ export default function Comment({
                   level={level + 1}
                   onAddReply={handleNestedReply}
                   postId={postId}
-                  onCommentCountChange={onCommentCountChange} // Truyền prop xuống
-                />
-              ))}
-            </div>
-          )} */}
-          {replies.length > 0 && (
-            <div className="mt-2">
-              {replies.map((reply) => (
-                <Comment
-                  key={reply.id}
-                  comment={reply}
-                  level={level} 
-                  onAddReply={handleNestedReply}
-                  postId={postId}
                   onCommentCountChange={onCommentCountChange}
                 />
               ))}
             </div>
           )}
-
         </div>
       </div>
     </div>

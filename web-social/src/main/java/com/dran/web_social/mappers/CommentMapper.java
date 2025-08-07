@@ -1,14 +1,9 @@
+
 package com.dran.web_social.mappers;
 
 import com.dran.web_social.dto.response.CommentResponse;
 import com.dran.web_social.models.CommentPost;
 import com.dran.web_social.services.LikeService;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,19 +22,9 @@ public abstract class CommentMapper {
     @Mapping(target = "level", source = "comment.level")
     @Mapping(target = "isLiked", expression = "java(isLikedByCurrentUser(comment, currentUserId))")
     @Mapping(target = "isOwner", expression = "java(isOwner(comment, currentUserId))")
-    @Mapping(target = "replies", expression = "java(mapReplies(comment.getReplies(), currentUserId))")
+    @Mapping(target = "replies", ignore = true) // Vẫn ignore vì replies được xử lý trong CommentUtil
+    @Mapping(target = "replyingTo", expression = "java(comment.getParent() != null ? getUsername(comment.getParent()) : null)")
     public abstract CommentResponse commentToCommentResponse(CommentPost comment, Long currentUserId);
-
-    protected List<CommentResponse> mapReplies(Set<CommentPost> replies, Long currentUserId) {
-        if (replies == null || replies.isEmpty()) {
-            return List.of();
-        }
-        return replies.stream()
-                .filter(reply -> !reply.getDeleted())
-                .map(reply -> commentToCommentResponse(reply, currentUserId))
-                .sorted(Comparator.comparing(CommentResponse::getCreateAt))
-                .collect(Collectors.toList());
-    }
 
     protected String getUsername(CommentPost comment) {
         return comment.getDeleted() ? "[deleted]" : comment.getUser().getUsername();

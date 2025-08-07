@@ -21,6 +21,7 @@ public class CommentResponse {
     private int repliesCount;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
+    private String replyingTo;
 
     // User info
     private String userName;

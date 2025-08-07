@@ -12,18 +12,19 @@ import com.dran.web_social.repositories.PostRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.CommentService;
 import com.dran.web_social.services.WebSocketService;
+import com.dran.web_social.utils.CommentUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,9 +35,8 @@ public class CommentServiceImpl implements CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentMapper commentMapper;
-    private final WebSocketService webSocketService; // Thêm dependency này
+    private final WebSocketService webSocketService;
 
-    // Tạo bình luận cho bài viết
     @Override
     @Transactional
     public CommentResponse createComment(String username, Long postId, CommentRequest request) {
@@ -52,44 +52,29 @@ public class CommentServiceImpl implements CommentService {
                 .user(user)
                 .likesCount(0)
                 .repliesCount(0)
+                .level(0)
                 .deleted(false)
                 .build();
-
         if (request.getParentId() != null) {
             CommentPost parentComment = commentRepository.findById(request.getParentId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Không tìm thấy comment cha với ID: " + request.getParentId()));
-            comment.setParent(parentComment);
-            if (parentComment.getParent() == null) {
-                comment.setLevel(1);
-            } else {
-                comment.setLevel(2);
-            }
-        }
-        // Handle reply
-        if (request.getParentId() != null) {
-            CommentPost parentComment = commentRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Không tìm thấy comment cha với ID: " + request.getParentId()));
+
             comment.setParent(parentComment);
 
-            // Update replies count
+            // ✅ Gắn đúng level, giới hạn tối đa là 2
+            int newLevel = parentComment.getLevel() + 1;
+            comment.setLevel(Math.min(newLevel, 2)); // Đảm bảo không vượt quá cấp 2
+
             parentComment.setRepliesCount(parentComment.getRepliesCount() + 1);
             commentRepository.save(parentComment);
-
-        } else {
-            comment.setLevel(0);
         }
 
         CommentPost savedComment = commentRepository.save(comment);
-
-        // Update post comments count
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepository.save(post);
 
         CommentResponse response = commentMapper.commentToCommentResponse(savedComment, user.getId());
-
-        // Gửi thông báo realtime
         webSocketService.notifyCommentCreated(postId, response, username);
 
         return response;
@@ -174,26 +159,16 @@ public class CommentServiceImpl implements CommentService {
             currentUser = userRepository.findByUserName(currentUsername).orElse(null);
         }
 
-        // Chỉ lấy top-level comments chưa bị xóa
-        Page<CommentPost> comments = commentRepository.findTopLevelCommentsByPostId(postId, pageable);
-        final Long currentUserId = currentUser != null ? currentUser.getId() : null;
+        Page<CommentPost> topLevelComments = commentRepository.findTopLevelCommentsByPostId(postId, pageable);
+        List<CommentPost> allComments = commentRepository.findByPostId(postId); // Bao gồm cả replies
 
-        return comments.map(comment -> {
-            CommentResponse response = commentMapper.commentToCommentResponse(comment, currentUserId);
+        List<CommentResponse> result = CommentUtil.processCommentsForAPI(
+                topLevelComments.getContent(),
+                allComments,
+                currentUser != null ? currentUser.getId() : null,
+                commentMapper);
 
-            // Chỉ load replies nếu comment gốc chưa bị xóa
-            if (!comment.getDeleted()) {
-                List<CommentPost> replies = commentRepository.findRepliesByParentId(comment.getId());
-                List<CommentResponse> replyResponses = replies.stream()
-                        .map(reply -> commentMapper.commentToCommentResponse(reply, currentUserId))
-                        .collect(Collectors.toList());
-                response.setReplies(replyResponses);
-            } else {
-                response.setReplies(List.of()); // Empty replies for deleted comments
-            }
-
-            return response;
-        });
+        return new PageImpl<>(result, pageable, topLevelComments.getTotalElements());
     }
 
     @Override
@@ -212,20 +187,9 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public Page<CommentResponse> getListCommentByPostId(Long postId, Pageable pageable) {
         Page<CommentPost> comments = commentRepository.findTopLevelCommentsByPostId(postId, pageable);
-        return comments.map(comment -> {
-            CommentResponse response = commentMapper.commentToCommentResponse(comment, null);
-
-            if (!comment.getDeleted()) {
-                List<CommentPost> replies = commentRepository.findRepliesByParentId(comment.getId());
-                List<CommentResponse> replyResponses = replies.stream()
-                        .map(reply -> commentMapper.commentToCommentResponse(reply, null))
-                        .collect(Collectors.toList());
-                response.setReplies(replyResponses);
-            } else {
-                response.setReplies(List.of());
-            }
-
-            return response;
-        });
+        List<CommentPost> allReplies = commentRepository.findByPostId(postId); // Lấy tất cả comment của post
+        List<CommentResponse> processed = CommentUtil.processCommentsForAPI(
+                comments.getContent(), allReplies, null, commentMapper);
+        return new PageImpl<>(processed, pageable, comments.getTotalElements());
     }
 }
