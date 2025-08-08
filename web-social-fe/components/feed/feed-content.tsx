@@ -203,105 +203,108 @@ export default function FeedContent() {
       />
 
       {/* Create Post Section */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <Card className="p-4">
-          <div className="flex gap-3">
-            <Avatar>
-              <AvatarImage src={user?.avatar || "/placeholder.svg?height=40&width=40"} alt="User" />
-              <AvatarFallback>
-                {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-3">
-              <Textarea
-                placeholder={`Bạn đang nghĩ gì thế, ${user?.firstName}?`}
-                value={newPostContent}
-                onChange={(e) => setNewPostContent(e.target.value)}
-                className="resize-none border-0 focus-visible:ring-0 text-base placeholder:text-muted-foreground"
-                rows={3}
-                disabled={isSubmitting}
-              />
+      {user && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                <Card className="p-4">
+                  <div className="flex gap-3">
+                    <Avatar>
+                      <AvatarImage src={user?.avatar || "/placeholder.svg?height=40&width=40"} alt="User" />
+                      <AvatarFallback>
+                        {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-3">
+                      <Textarea
+                        placeholder={`Bạn đang nghĩ gì thế, ${user?.firstName}?`}
+                        value={newPostContent}
+                        onChange={(e) => setNewPostContent(e.target.value)}
+                        className="resize-none border-0 focus-visible:ring-0 text-base placeholder:text-muted-foreground"
+                        rows={3}
+                        disabled={isSubmitting}
+                      />
 
-              {/* File Previews */}
-              <AnimatePresence>
-                {previewUrls.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="grid grid-cols-2 gap-2"
-                  >
-                    {previewUrls.map((url, index) => (
-                      <div key={index} className="relative rounded-lg overflow-hidden">
-                        {selectedFiles[index]?.type.startsWith('video/') ? (
-                          <video
-                            src={url}
-                            className="w-full h-32 object-cover"
-                            controls
-                          />
-                        ) : (
-                          <img
-                            src={url}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-32 object-cover"
-                          />
+                      {/* File Previews */}
+                      <AnimatePresence>
+                        {previewUrls.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="grid grid-cols-2 gap-2"
+                          >
+                            {previewUrls.map((url, index) => (
+                              <div key={index} className="relative rounded-lg overflow-hidden">
+                                {selectedFiles[index]?.type.startsWith('video/') ? (
+                                  <video
+                                    src={url}
+                                    className="w-full h-32 object-cover"
+                                    controls
+                                  />
+                                ) : (
+                                  <img
+                                    src={url}
+                                    alt={`Preview ${index + 1}`}
+                                    className="w-full h-32 object-cover"
+                                  />
+                                )}
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="absolute top-1 right-1 h-6 w-6 shadow-md"
+                                  onClick={() => removeFile(index)}
+                                  disabled={isSubmitting}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </motion.div>
                         )}
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="absolute top-1 right-1 h-6 w-6 shadow-md"
-                          onClick={() => removeFile(index)}
-                          disabled={isSubmitting}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
+                      </AnimatePresence>
+
+                      <div className="pt-2 border-t space-y-3">
+                        {/* Action Buttons Grid */}
+                        <div className="grid grid-cols-4 gap-2">
+                          {actionButtons.map((button, index) => (
+                            <Button
+                              key={index}
+                              variant="ghost"
+                              size="sm"
+                              className={`flex flex-col items-center gap-1 h-auto py-2 px-1 ${button.color} transition-colors`}
+                              onClick={button.action}
+                              disabled={isSubmitting}
+                            >
+                              <button.icon className="h-5 w-5" />
+                              <span className="text-xs font-medium">{button.label}</span>
+                            </Button>
+                          ))}
+                        </div>
+
+                        {/* Post Button */}
+                        <div className="flex justify-end">
+                          <Button 
+                            size="sm" 
+                            onClick={handleCreatePost} 
+                            disabled={(!newPostContent.trim() && selectedFiles.length === 0) || isSubmitting}
+                            className="px-6"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Đang đăng...
+                              </>
+                            ) : (
+                              "Đăng"
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="pt-2 border-t space-y-3">
-                {/* Action Buttons Grid */}
-                <div className="grid grid-cols-4 gap-2">
-                  {actionButtons.map((button, index) => (
-                    <Button
-                      key={index}
-                      variant="ghost"
-                      size="sm"
-                      className={`flex flex-col items-center gap-1 h-auto py-2 px-1 ${button.color} transition-colors`}
-                      onClick={button.action}
-                      disabled={isSubmitting}
-                    >
-                      <button.icon className="h-5 w-5" />
-                      <span className="text-xs font-medium">{button.label}</span>
-                    </Button>
-                  ))}
-                </div>
-
-                {/* Post Button */}
-                <div className="flex justify-end">
-                  <Button 
-                    size="sm" 
-                    onClick={handleCreatePost} 
-                    disabled={(!newPostContent.trim() && selectedFiles.length === 0) || isSubmitting}
-                    className="px-6"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Đang đăng...
-                      </>
-                    ) : (
-                      "Đăng"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+      )}
+     
 
       {/* Posts Feed */}
       <div className="space-y-6">
@@ -316,7 +319,9 @@ export default function FeedContent() {
       </div>
 
       {/* Floating Action Button */}
-      <FloatingActionButton onCreatePost={handleCreatePostFromModal} />
+      {user &&(
+        <FloatingActionButton onCreatePost={handleCreatePostFromModal} />
+      )}
     </div>
   )
 }

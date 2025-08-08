@@ -1,12 +1,11 @@
-
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Heart, MessageCircle, Send, Trash, Edit } from "lucide-react"
+import { Heart, MessageCircle, Send, Trash, Edit } from 'lucide-react'
 import { toast } from "@/components/ui/use-toast"
 import { LikeService } from "@/lib/like-service"
 import { type CommentData, type CommentProps, commentService } from "@/lib/comment-service"
@@ -31,11 +30,16 @@ export default function Comment({
   const [isLoading, setIsLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editText, setEditText] = useState(comment.content)
+  const [showReplies, setShowReplies] = useState(false)
   const { user } = useAuth()
+
+  // Update replies when comment.replies changes from parent
+  useEffect(() => {
+    setReplies(comment.replies || [])
+  }, [comment.replies])
 
   const handleLike = async () => {
     if (isLiking || !user) return
-
     setIsLiking(true)
     try {
       const response = await LikeService.toggleLikeComment(Number(comment.id))
@@ -58,11 +62,17 @@ export default function Comment({
       try {
         const newReply = await commentService.createComment(postId, replyText, comment.id)
         console.log("New reply:", newReply)
+        
+        // Update local state immediately (optimistic update)
         if (level >= 2 && onAddReply) {
           onAddReply(newReply, 1)
         } else {
-          setReplies([...replies, newReply])
+          setReplies(prevReplies => [...prevReplies, newReply])
         }
+        
+        // Always show replies after adding a new one
+        setShowReplies(true)
+        
         if (onCommentCountChange) {
           onCommentCountChange(1)
         }
@@ -92,15 +102,22 @@ export default function Comment({
 
   const handleNestedReply = (reply: CommentData, targetLevel: number) => {
     if (targetLevel === 1) {
-      setReplies([...replies, reply])
+      setReplies(prevReplies => [...prevReplies, reply])
+      // Always show replies when a nested reply is added
+      setShowReplies(true)
     } else if (onAddReply) {
       onAddReply(reply, targetLevel)
     }
   }
 
+  const countAllReplies = (comments: CommentData[]): number => {
+    return comments.reduce((acc, c) => {
+      return acc + 1 + (c.replies ? countAllReplies(c.replies) : 0)
+    }, 0)
+  }
+
   const handleDelete = async () => {
     if (!comment.isOwner) return
-
     try {
       await commentService.deleteComment(comment.id)
       comment.deleted = true
@@ -123,7 +140,6 @@ export default function Comment({
 
   const handleEdit = async () => {
     if (!comment.isOwner || !editText.trim()) return
-
     try {
       const updatedComment = await commentService.updateComment(comment.id, editText)
       comment.content = updatedComment.content
@@ -154,7 +170,7 @@ export default function Comment({
   const isDeepLevel = level >= 2
 
   return (
-    <div className={`${level > 0 ? "ml-8 mt-3 border-l-2 border-gray-200" : "mt-4"}`}>
+    <div className={`${level > 0 ? "ml-8 mt-3 " : "mt-4"}`}>
       <div className="flex gap-3">
         <Avatar className="h-8 w-8">
           <AvatarImage src={comment.user?.avatar || "/placeholder.svg"} alt={comment.user?.name} />
@@ -168,7 +184,6 @@ export default function Comment({
               <span className="text-xs text-muted-foreground">•</span>
               <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
             </div>
-
             {isEditing ? (
               <div className="mt-2 flex gap-2">
                 <Input value={editText} onChange={(e) => setEditText(e.target.value)} className="h-8 text-sm" />
@@ -186,13 +201,11 @@ export default function Comment({
               </p>
             )}
           </div>
-
           <div className="flex items-center gap-4 mt-2">
             <Button variant="ghost" size="sm" className="h-auto p-1 text-xs" onClick={handleLike} disabled={!user}>
               <Heart className={`h-3 w-3 mr-1 ${liked ? "fill-red-500 text-red-500" : ""}`} />
               {likesCount > 0 && likesCount}
             </Button>
-
             {level < maxLevel && (
               <Button
                 variant="ghost"
@@ -203,17 +216,14 @@ export default function Comment({
               >
                 <MessageCircle className="h-3 w-3 mr-1" />
                 Trả lời
-                {/* {isDeepLevel && <span className="ml-1 text-xs text-blue-600"></span>} */}
               </Button>
             )}
-
             {comment.isOwner && !comment.deleted && (
               <>
                 <Button variant="ghost" size="sm" className="h-auto p-1 text-xs" onClick={() => setIsEditing(true)}>
                   <Edit className="h-3 w-3 mr-1" />
                   Sửa
                 </Button>
-
                 <Button variant="ghost" size="sm" className="h-auto p-1 text-xs text-red-500" onClick={handleDelete}>
                   <Trash className="h-3 w-3 mr-1" />
                   Xóa
@@ -221,7 +231,7 @@ export default function Comment({
               </>
             )}
           </div>
-
+          
           <AnimatePresence>
             {showReplyInput && (
               <motion.div
@@ -256,19 +266,37 @@ export default function Comment({
             )}
           </AnimatePresence>
 
-          {replies.length > 0 && (
-            <div className="mt-2 border-l-2 border-gray-200 pl-4">
-              {replies.map((reply) => (
-                <Comment
-                  key={reply.id}
-                  comment={reply}
-                  level={level + 1}
-                  onAddReply={handleNestedReply}
-                  postId={postId}
-                  onCommentCountChange={onCommentCountChange}
-                />
-              ))}
-            </div>
+          {/* Show/Hide replies logic */}
+          {replies.length > 0 && !showReplies && (
+            <button
+              className="text-xs text-blue-600 mt-2 hover:underline"
+              onClick={() => setShowReplies(true)}
+            >
+              Xem thêm {countAllReplies(replies)} phản hồi
+            </button>
+          )}
+
+          {replies.length > 0 && showReplies && (
+            <>
+              <button
+                className="text-xs text-gray-500 mt-2 hover:underline"
+                onClick={() => setShowReplies(false)}
+              >
+                Ẩn phản hồi
+              </button>
+              <div className="mt-2 pl-4">
+                {replies.map((reply) => (
+                  <Comment
+                    key={reply.id}
+                    comment={reply}
+                    level={level + 1}
+                    onAddReply={handleNestedReply}
+                    postId={postId}
+                    onCommentCountChange={onCommentCountChange}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

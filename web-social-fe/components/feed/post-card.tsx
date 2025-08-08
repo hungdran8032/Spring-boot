@@ -1,30 +1,12 @@
- "use client"
+"use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Heart,
-  MessageCircle,
-  Share2,
-  MoreHorizontal,
-  Send,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Trash2,
-  Edit,
-  EyeOff,
-  AlertTriangle,
-  BookMarked,
-} from "lucide-react"
+import { Heart, MessageCircle, Share2, MoreHorizontal, X, ChevronLeft, ChevronRight, Trash2, Edit, EyeOff, AlertTriangle, Bookmark } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import Comment from "@/components/feed/comment"
-// import { CommentData } from "@/components/comment-service"
 import { useAuth } from "@/contexts/AuthContext"
 import { type PostCardProps, PostService } from "@/lib/post-service"
 import { useToast } from "@/hooks/use-toast"
@@ -33,7 +15,7 @@ import ConfirmDialog from "@/components/ui/confirm-dialog"
 import Link from "next/link"
 import { LikeService } from "@/lib/like-service"
 import { type CommentData, commentService } from "@/lib/comment-service"
-import { useWebSocket } from '@/hooks/useWebSocket';
+import PostCommentModal from "@/components/feed/post-comment-modal"
 
 export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardProps) {
   const { user } = useAuth()
@@ -56,6 +38,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0)
+
   // Create stable dependencies for useEffect
   const postDependencies = useMemo(
     () => ({
@@ -75,16 +58,19 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
     })
   }, [postDependencies, post])
 
-  // Tải bình luận khi hiển thị phần comments
+  // Load comments when showing comments section - ALWAYS load fresh data
   useEffect(() => {
-    if (showComments && comments.length === 0) {
+    if (showComments) {
       loadComments()
+    } else {
+      // Reset comments when modal is closed
+      setComments([])
+      setCommentText("")
     }
   }, [showComments])
 
   const loadComments = async () => {
     if (isLoadingComments) return
-
     setIsLoadingComments(true)
     try {
       const commentsData = await commentService.getCommentsByPost(post.id)
@@ -103,12 +89,9 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
 
   const handleLike = async () => {
     if (isLiking) return
-
     setIsLiking(true)
     try {
       const response = await LikeService.toggleLikePost(post.id)
-
-      console.log("Like response:", response)
       setLiked(response.liked)
       setLikesCount(response.likesCount)
     } catch (error) {
@@ -122,86 +105,9 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
     }
   }
 
-  const handleComment = async () => {
-    if (commentText.trim() && !isSubmittingComment && user) {
-      setIsSubmittingComment(true)
-      try {
-        const newComment = await commentService.createComment(post.id, commentText)
-        setComments([newComment, ...comments])
-        setCommentText("")
-        setCommentsCount((prev) => prev + 1) 
-
-        toast({
-          title: "Thành công",
-          description: "Đã gửi bình luận",
-        })
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Lỗi",
-          description: "Không thể gửi bình luận",
-        })
-      } finally {
-        setIsSubmittingComment(false)
-      }
-    } else if (!user) {
-      toast({
-        variant: "destructive",
-        title: "Chưa đăng nhập",
-        description: "Vui lòng đăng nhập để bình luận",
-      })
-    }
-  }
-
-  // Hàm mới để xử lý thay đổi tổng số bình luận
   const handleTotalCommentCountChange = (delta: number) => {
     setCommentsCount((prev) => prev + delta)
   }
-
-  // // WebSocket integration
-  // const { connected } = useWebSocket({
-  //   postId: post.id,
-  //   onCommentCreated: (newComment) => {
-  //     const mappedComment = {
-  //       ...newComment,
-  //       user: {
-  //         name: newComment.userFullName || newComment.userName,
-  //         username: newComment.userName,
-  //         avatar: newComment.userAvatar
-  //       }
-  //     };
-      
-  //     setComments(prev => [mappedComment, ...prev]);
-  //     onUpdatePost?.({
-  //       ...post,
-  //       commentsCount: post.commentsCount + 1
-  //     });
-  //   },
-  //   onCommentUpdated: (updatedComment) => {
-      
-  //     const mappedComment = {
-  //       ...updatedComment,
-  //       user: {
-  //         name: updatedComment.userFullName || updatedComment.userName,
-  //         username: updatedComment.userName,
-  //         avatar: updatedComment.userAvatar
-  //       }
-  //     };
-      
-  //     setComments(prev => 
-  //       prev.map(comment => 
-  //         comment.id === mappedComment.id ? mappedComment : comment
-  //       )
-  //     );
-  //   },
-  //   onCommentDeleted: (deletedCommentId) => {
-  //     setComments(prev => prev.filter(comment => comment.id !== deletedCommentId));
-  //     onUpdatePost?.({
-  //       ...post,
-  //       commentsCount: Math.max(0, post.commentsCount - 1)
-  //     });
-  //   },
-  // });
 
   const handleShare = () => {
     console.log("Sharing post:", post.id)
@@ -252,16 +158,16 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
   }
 
   const handleUpdatePost = (updatedPost: any) => {
-    // Cập nhật local state
     setPostData({
       ...postData,
       content: updatedPost.content,
       media: updatedPost.media || [],
     })
-
-    // Gọi callback từ parent component
     onUpdatePost?.(updatedPost)
   }
+
+  // Handle closing comments modal
+  
 
   const isOwner = user?.userName === post.userName
 
@@ -297,7 +203,7 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
-                  <BookMarked className="h-4 w-4 mr-2" />
+                  <Bookmark className="h-4 w-4 mr-2" />
                   Lưu
                 </DropdownMenuItem>
                 <DropdownMenuItem>
@@ -310,7 +216,6 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
                 </DropdownMenuItem>
                 {isOwner && (
                   <>
-                    {/* <DropdownMenuSeparator /> */}
                     <DropdownMenuItem onClick={handleEditPost}>
                       <Edit className="h-4 w-4 mr-2" />
                       Chỉnh sửa
@@ -346,8 +251,8 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
                     postData.media.length === 2
                       ? "grid-cols-2"
                       : postData.media.length === 3
-                        ? "grid-cols-2"
-                        : "grid-cols-2"
+                      ? "grid-cols-2"
+                      : "grid-cols-2"
                   }`}
                 >
                   {postData.media.slice(0, 4).map((image, index) => (
@@ -379,141 +284,94 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
         <CardFooter className="p-4 pt-0 flex flex-col">
           <div className="flex items-center justify-between w-full border-t pt-3">
             <Button variant="ghost" size="sm" className="gap-2" onClick={handleLike}>
-              <Heart className={`h-5 w-5 ${liked == true ? "fill-red-500 text-red-500" : ""}`} />
+              <Heart className={`h-5 w-5 ${liked ? "fill-red-500 text-red-500" : ""}`} />
               <span>{likesCount}</span>
             </Button>
-
-            <Button variant="ghost" size="sm" className="gap-2" onClick={() => setShowComments(!showComments)}>
+            <Button variant="ghost" size="sm" className="gap-2" onClick={() => setShowComments(true)}>
               <MessageCircle className="h-5 w-5" />
               <span>{commentsCount}</span>
             </Button>
-
             <Button variant="ghost" size="sm" className="gap-2" onClick={handleShare}>
               <Share2 className="h-5 w-5" />
               <span>Chia sẻ</span>
             </Button>
           </div>
-
-          <AnimatePresence>
-            {showComments && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="w-full mt-4 pt-4 border-t"
-              >
-                <div className="flex gap-3 mb-4">
-                  <Link href={`/${user?.userName}`}>
-                    <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
-                      <AvatarImage src={user?.avatar || "/placeholder.svg"} />
-                      <AvatarFallback>
-                        {user?.firstName?.charAt(0)}
-                        {user?.lastName?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Link>
-                  <div className="flex-1 flex gap-2">
-                    <Input
-                      placeholder="Viết bình luận..."
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      className="flex-1"
-                      onKeyPress={(e) => e.key === "Enter" && handleComment()}
-                      disabled={isSubmittingComment || !user}
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleComment}
-                      disabled={isSubmittingComment || !user || !commentText.trim()}
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {isLoadingComments ? (
-                  <div className="flex justify-center py-4">
-                    <p className="text-muted-foreground">Đang tải bình luận...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {comments.length > 0 ? (
-                      comments.map((comment) => (
-                        <Comment
-                          key={comment.id}
-                          comment={comment}
-                          postId={post.id}
-                          onCommentCountChange={handleTotalCommentCountChange} 
-                        />
-                      ))
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-muted-foreground">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </CardFooter>
 
-        <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
-            <DialogTitle className="sr-only">
-              Post image {currentImageIndex + 1} of {post.media?.length || 1}
-            </DialogTitle>
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70 text-white"
-                onClick={() => setShowImageModal(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-
-              {post.media && post.media.length > 1 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white"
-                    onClick={prevImage}
-                    disabled={currentImageIndex === 0}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white"
-                    onClick={nextImage}
-                    disabled={!post.media || currentImageIndex === post.media.length - 1}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-
-              {post.media && (
-                <img
-                  src={post.media[currentImageIndex]?.url || "/placeholder.svg"}
-                  alt={`Post image ${currentImageIndex + 1}`}
-                  className="w-full h-auto max-h-[85vh] object-contain"
-                />
-              )}
-
-              {post.media && post.media.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                  {currentImageIndex + 1} / {post.media.length}
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
+        <PostCommentModal
+          post={post}
+          showComments={showComments}
+          setShowComments={setShowComments}
+          comments={comments}
+          setComments={setComments}
+          commentText={commentText}
+          setCommentText={setCommentText}
+          commentsCount={commentsCount}
+          setCommentsCount={setCommentsCount}
+          likesCount={likesCount}
+          setLikesCount={setLikesCount}
+          liked={liked}
+          setLiked={setLiked}
+          isLoadingComments={isLoadingComments}
+          setIsLoadingComments={setIsLoadingComments}
+          isSubmittingComment={isSubmittingComment}
+          setIsSubmittingComment={setIsSubmittingComment}
+          handleTotalCommentCountChange={handleTotalCommentCountChange}
+          onRefreshComments={loadComments}
+        />
       </Card>
+
+      <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogTitle className="sr-only">
+            Post image {currentImageIndex + 1} of {post.media?.length || 1}
+          </DialogTitle>
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70 text-white"
+              onClick={() => setShowImageModal(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            {post.media && post.media.length > 1 && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white"
+                  onClick={prevImage}
+                  disabled={currentImageIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/50 hover:bg-black/70 text-white"
+                  onClick={nextImage}
+                  disabled={!post.media || currentImageIndex === post.media.length - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            {post.media && (
+              <img
+                src={post.media[currentImageIndex]?.url || "/placeholder.svg"}
+                alt={`Post image ${currentImageIndex + 1}`}
+                className="w-full h-auto max-h-[85vh] object-contain"
+              />
+            )}
+            {post.media && post.media.length > 1 && (
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {post.media.length}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <EditPostModal
         isOpen={showEditModal}
