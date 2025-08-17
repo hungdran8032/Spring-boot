@@ -63,7 +63,7 @@ function toCommentData(response: any): CommentData {
   const isDeleted = response.deleted === true
 
   return {
-    id: response.id.toString(),
+    id: response.id,
     content: isDeleted ? "Bình luận đã bị xoá" : response.content,
     likes: response.likesCount ?? 0,
     createdAt: response.createAt ?? new Date().toISOString(),
@@ -71,7 +71,7 @@ function toCommentData(response: any): CommentData {
     user: {
       name: isDeleted ? "Người dùng ẩn danh" : (response.userFullName ?? "Không rõ"),
       username: isDeleted ? "unknown" : (response.userName ?? "unknown"),
-      avatar: response.userAvatar ?? "/placeholder.svg",
+      avatar: response.userAvatar ?? "/avt.png",
     },
     replies: (response.replies || []).map(toCommentData),
     deleted: isDeleted,

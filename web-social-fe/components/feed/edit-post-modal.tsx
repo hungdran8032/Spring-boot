@@ -133,7 +133,7 @@ export default function EditPostModal({ isOpen, onClose, post, onUpdatePost }: E
           <div className="space-y-4">
             <div className="flex gap-3">
               <Avatar>
-                <AvatarImage src={user?.avatar || "/placeholder.svg"} />
+                <AvatarImage src={user?.avatar || "/avt.png"} />
                 <AvatarFallback>
                   {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                 </AvatarFallback>

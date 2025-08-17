@@ -142,7 +142,7 @@ export default function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.avatar || "/placeholder.svg?height=40&width=40"} alt="User" />
+                  <AvatarImage src={user.avatar || "/avt.png?height=40&width=40"} alt="User" />
                   <AvatarFallback>
                     {(user.firstName?.charAt(0) || "") + (user.lastName?.charAt(0) || "")}
                   </AvatarFallback>

@@ -161,7 +161,7 @@ export default function ProfileHeader({ username }: ProfileHeaderProps) {
         onClick={() => setShowBannerDialog(true)}
       >
         <img 
-          src={userProfile.banner || "/placeholder.svg?height=300&width=1200"} 
+          src={userProfile.banner || "/banner.png?height=300&width=1200"} 
           alt="Cover" 
           className="w-full h-full object-cover" 
         />
@@ -193,7 +193,7 @@ export default function ProfileHeader({ username }: ProfileHeaderProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="absolute -top-16 ring-4 ring-background h-32 w-32 cursor-pointer hover:opacity-90 transition-opacity">
-                  <AvatarImage src={userProfile.user?.avatar || "/placeholder.svg"} alt={`${userProfile.user?.firstName} ${userProfile.user?.lastName}`} />
+                  <AvatarImage src={userProfile.user?.avatar || "/avt.png"} alt={`${userProfile.user?.firstName} ${userProfile.user?.lastName}`} />
                   <AvatarFallback>
                     {userProfile.user?.firstName?.charAt(0)}{userProfile.user?.lastName?.charAt(0)}
                   </AvatarFallback>
@@ -331,7 +331,7 @@ export default function ProfileHeader({ username }: ProfileHeaderProps) {
           <DialogTitle className="sr-only">Ảnh đại diện</DialogTitle>
           <div className="flex justify-center">
             <img 
-              src={userProfile.user?.avatar || "/placeholder.svg"} 
+              src={userProfile.user?.avatar || "/avt.png"} 
               alt="Avatar" 
               className="w-full h-auto rounded-lg"
             />
@@ -345,7 +345,7 @@ export default function ProfileHeader({ username }: ProfileHeaderProps) {
           <DialogTitle className="sr-only">Ảnh bìa</DialogTitle>
           <div className="relative">
             <img 
-              src={userProfile.banner || "/placeholder.svg?height=300&width=1200"} 
+              src={userProfile.banner || "/banner.png?height=300&width=1200"} 
               alt="Banner" 
               className="w-full h-auto rounded-lg"
             />

@@ -208,7 +208,7 @@ export default function FeedContent() {
                 <Card className="p-4">
                   <div className="flex gap-3">
                     <Avatar>
-                      <AvatarImage src={user?.avatar || "/placeholder.svg?height=40&width=40"} alt="User" />
+                      <AvatarImage src={user?.avatar || "/avt.png?height=40&width=40"} alt="User" />
                       <AvatarFallback>
                         {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                       </AvatarFallback>

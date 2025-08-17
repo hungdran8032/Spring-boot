@@ -135,7 +135,7 @@ export default function PostCommentModal({
             <div className="flex items-center mb-4">
               <Link href={`/${post.userName}`}>
                 <Avatar>
-                  <AvatarImage src={post.userAvatar || "/placeholder.svg"} alt={post.userFullName} />
+                  <AvatarImage src={post.userAvatar || "/avt.png"} alt={post.userFullName} />
                   <AvatarFallback>{post.userFullName.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Link>
@@ -156,7 +156,7 @@ export default function PostCommentModal({
               <div className="rounded-md overflow-hidden mt-3">
                 {post.media.length === 1 ? (
                   <img
-                    src={post.media[0]?.url || "/placeholder.svg"}
+                    src={post.media[0]?.url || "/avt.png"}
                     alt="Post image"
                     className="w-full h-auto object-cover max-h-96 cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => openImageModal(0)}
@@ -174,7 +174,7 @@ export default function PostCommentModal({
                     {post.media.slice(0, 4).map((image, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={image?.url || "/placeholder.svg"}
+                          src={image?.url || "/avt.png"}
                           alt={`Post image ${index + 1}`}
                           className={`w-full h-32 object-cover cursor-pointer hover:opacity-90 transition-opacity ${
                             post.media && post.media.length === 3 && index === 0 ? "row-span-2 h-full" : ""
@@ -215,7 +215,7 @@ export default function PostCommentModal({
           <div className="flex flex-col p-4 max-h-[70vh] overflow-y-auto">
             <div className="flex gap-3 mb-4">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.avatar || "/placeholder.svg"} />
+                <AvatarImage src={user?.avatar || "/avt.png"} />
                 <AvatarFallback>
                   {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
                 </AvatarFallback>

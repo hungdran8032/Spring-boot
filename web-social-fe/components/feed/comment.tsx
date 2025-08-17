@@ -173,7 +173,7 @@ export default function Comment({
     <div className={`${level > 0 ? "ml-8 mt-3 " : "mt-4"}`}>
       <div className="flex gap-3">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={comment.user?.avatar || "/placeholder.svg"} alt={comment.user?.name} />
+          <AvatarImage src={comment.user?.avatar || "/avt.png"} alt={comment.user?.name} />
           <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
@@ -242,7 +242,7 @@ export default function Comment({
               >
                 <Avatar className="h-6 w-6">
                   <AvatarImage
-                    src={user?.avatar || "/placeholder.svg?height=24&width=24"}
+                    src={user?.avatar || "/avt.png?height=24&width=24"}
                     alt={user?.firstName || "U"}
                   />
                   <AvatarFallback>{user?.firstName?.charAt(0) || "U"}</AvatarFallback>

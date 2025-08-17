@@ -94,7 +94,23 @@ public class ProfileServiceImpl implements ProfileService {
                         () -> new RuntimeException("Không tìm thấy người dùng có tài khoản: " + username));
         Profile profile = user.getProfile();
         if (profile == null) {
-            throw new RuntimeException("Profile không tồn tại");
+            // throw new RuntimeException("Profile không tồn tại");
+            profile = new Profile();
+            profile.setUser(user); // gắn ngược lại user
+            profile.setBio("");
+            profile.setBanner(null);
+            profile.setWebsite(null);
+            profile.setLocation(null);
+            profile.setFollowersCount(0);
+            profile.setFollowingCount(0);
+            profile.setPostsCount(0);
+
+            // Lưu profile
+            profile = profileRepository.save(profile);
+
+            // gắn vào user (nếu user có mappedBy profile)
+            user.setProfile(profile);
+            userRepository.save(user);
         }
 
         return ProfileResponse.builder()

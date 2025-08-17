@@ -153,7 +153,8 @@ export default function ProfileTabs({ username }: ProfileTabsProps) {
                   type: "image"
                 }] : [],
                 isLiked: false,
-                likesCount: post.likes
+                likesCount: post.likes,
+                // commentsCount: post.comments
               }} />
             </motion.div>
           ))}
