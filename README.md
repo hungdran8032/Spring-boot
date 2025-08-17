@@ -1,4 +1,4 @@
-# Social web platforms
+# Social web
 
 ![alt text](images/login.png)
 
