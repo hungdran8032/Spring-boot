@@ -6,6 +6,7 @@ import com.dran.web_social.dto.request.RegisterRequest;
 import com.dran.web_social.dto.response.AuthResponse;
 import com.dran.web_social.dto.response.UserResponse;
 import com.dran.web_social.models.User;
+import com.dran.web_social.redis.RedisService;
 import com.dran.web_social.repositories.RefreshTokenRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.AuthService;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +33,10 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final RefreshTokenRepository refreshTokenRepository;
+    // private final RefreshTokenRepository refreshTokenRepository;
     private final VerificationTokenService verificationTokenService;
     private final UserRepository userRepository;
+    private final RedisService redisService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -52,9 +55,21 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@RequestBody RefreshTokenRequest request) {
-        refreshTokenRepository.findByToken(request.getRefreshToken())
-                .ifPresent(refreshTokenRepository::delete);
-        return ResponseEntity.ok("{\"message\": \"Logged out\"}");
+        // refreshTokenRepository.findByToken(request.getRefreshToken())
+        // .ifPresent(refreshTokenRepository::delete);
+        // return ResponseEntity.ok("{\"message\": \"Logged out\"}");
+        String refreshToken = request.getRefreshToken();
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            return ResponseEntity.badRequest().body("{\"error\": \"Refresh token is required\"}");
+        }
+
+        // Kiểm tra và xóa token từ Redis
+        if (redisService.findByToken(refreshToken).isPresent()) {
+            redisService.deleteByToken(refreshToken);
+            return ResponseEntity.ok("{\"message\": \"Logged out\"}");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("{\"error\": \"Refresh token not found\"}");
+        }
     }
 
     @GetMapping("/google/login")

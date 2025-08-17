@@ -35,10 +35,15 @@ export default function Navbar() {
       return null;
     }
   const handleLogout = async () => {
+    toast({
+      variant: "warning",
+      title: "Đang đăng xuất...",
+      description: "Vui lòng chờ trong giây lát",
+    });
     try {
-      logout();
+      await logout();
       router.push("/login");
-      toast({ title: "Đăng xuất thành công", description: "Bạn đã đăng xuất thành công" });
+      toast({variant:"success", title: "Đăng xuất thành công", description: "Bạn đã đăng xuất thành công" });
     } catch (err) {
       console.error("Logout failed", err);
     }

@@ -26,6 +26,8 @@ import com.dran.web_social.models.RefreshToken;
 import com.dran.web_social.models.Role;
 import com.dran.web_social.models.User;
 import com.dran.web_social.models.UserRole;
+import com.dran.web_social.redis.RTRedis;
+import com.dran.web_social.redis.RedisService;
 import com.dran.web_social.repositories.RefreshTokenRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.repositories.UserRoleRepository;
@@ -51,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
         private final AuthenticationManager authenticationManager;
         private final VerificationTokenService verificationTokenService;
         private final ProfileMapper profileMapper;
+        private final RedisService redisService;
 
         @Value("${jwt.refresh.expiration}")
         private long refreshTokenExpiration;
@@ -84,12 +87,16 @@ public class AuthServiceImpl implements AuthService {
                 String refreshToken = jwtConfig.generateToken(user.getUsername(), roles,
                                 TokenType.REFRESH_TOKEN);
                 // Lưu refresh token
-                RefreshToken refreshTokenEntity = RefreshToken.builder()
-                                .token(refreshToken)
-                                .expiryDate(Instant.now().plusMillis(refreshTokenExpiration))
-                                .user(user)
-                                .build();
-                refreshTokenRepository.save(refreshTokenEntity);
+                // RefreshToken refreshTokenEntity = RefreshToken.builder()
+                // .token(refreshToken)
+                // .expiryDate(Instant.now().plusMillis(refreshTokenExpiration))
+                // .user(user)
+                // .build();
+                // refreshTokenRepository.save(refreshTokenEntity);
+
+                RTRedis rtRedis = new RTRedis(refreshToken, Instant.now().plusMillis(refreshTokenExpiration),
+                                savedUser.getId());
+                redisService.save(rtRedis);
 
                 AuthResponse response = userMapper.userToAuthResponse(user);
                 response.setToken(accessToken);
@@ -119,13 +126,18 @@ public class AuthServiceImpl implements AuthService {
 
                 // Lưu refresh token
                 User user = (User) userDetails;
-                refreshTokenRepository.deleteByUserId(user.getId()); // Xóa refresh token cũ
-                RefreshToken refreshTokenEntity = RefreshToken.builder()
-                                .token(refreshToken)
-                                .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 7 ngày
-                                .user(user)
-                                .build();
-                refreshTokenRepository.save(refreshTokenEntity);
+                // refreshTokenRepository.deleteByUserId(user.getId());
+                redisService.deleteAllByUserId(user.getId());
+
+                RTRedis rtRedis = new RTRedis(refreshToken, Instant.now().plusMillis(refreshTokenExpiration),
+                                user.getId());
+                redisService.save(rtRedis);
+                // RefreshToken refreshTokenEntity = RefreshToken.builder()
+                // .token(refreshToken)
+                // .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 7 ngày
+                // .user(user)
+                // .build();
+                // refreshTokenRepository.save(refreshTokenEntity);
 
                 // Ánh xạ sang DTO phản hồi
                 AuthResponse response = userMapper.userToLoginAuthResponse(user);
@@ -136,6 +148,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         @Override
+        @Transactional
         public AuthResponse refreshToken(RefreshTokenRequest request) {
                 String refreshToken = request.getRefreshToken();
 
@@ -155,13 +168,18 @@ public class AuthServiceImpl implements AuthService {
                 String newRefreshToken = jwtConfig.generateToken(user.getUsername(), roles,
                                 TokenType.REFRESH_TOKEN);
                 // Xóa RT cũ, lưu RT mới
-                refreshTokenRepository.delete(storedToken);
-                RefreshToken newTokenEntity = RefreshToken.builder()
-                                .token(newRefreshToken)
-                                .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 10 phút
-                                .user(user)
-                                .build();
-                refreshTokenRepository.save(newTokenEntity);
+                // refreshTokenRepository.delete(storedToken);
+                // RefreshToken newTokenEntity = RefreshToken.builder()
+                // .token(newRefreshToken)
+                // .expiryDate(Instant.now().plusMillis(refreshTokenExpiration)) // 10 phút
+                // .user(user)
+                // .build();
+                // refreshTokenRepository.save(newTokenEntity);
+                redisService.deleteByToken(refreshToken);
+
+                RTRedis newRtRedis = new RTRedis(newRefreshToken, Instant.now().plusMillis(refreshTokenExpiration),
+                                user.getId());
+                redisService.save(newRtRedis);
 
                 AuthResponse response = new AuthResponse();
                 response.setMessage("Token refreshed");

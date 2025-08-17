@@ -3,11 +3,13 @@ package com.dran.web_social.config;
 import com.dran.web_social.dto.response.AuthResponse;
 import com.dran.web_social.mappers.ProfileMapper;
 import com.dran.web_social.models.Profile;
-import com.dran.web_social.models.RefreshToken;
+// import com.dran.web_social.models.RefreshToken;
 import com.dran.web_social.models.Role;
 import com.dran.web_social.models.User;
 import com.dran.web_social.models.UserRole;
-import com.dran.web_social.repositories.RefreshTokenRepository;
+import com.dran.web_social.redis.RTRedis;
+import com.dran.web_social.redis.RedisService;
+// import com.dran.web_social.repositories.RefreshTokenRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.repositories.UserRoleRepository;
 import com.dran.web_social.services.RoleService;
@@ -45,7 +47,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private final UserRepository userRepository;
     private final RoleService roleService;
     private final UserRoleRepository userRoleRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    // private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisService redisService;
     private final JwtConfig jwtConfig;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ProfileMapper profileMapper;
@@ -144,13 +147,17 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             String refreshToken = jwtConfig.generateToken(user.getUsername(), roles,
                     TokenType.REFRESH_TOKEN);
             // Lưu refresh token vào database
-            refreshTokenRepository.deleteByUserId(user.getId());
-            RefreshToken refreshTokenEntity = RefreshToken.builder()
-                    .token(refreshToken)
-                    .expiryDate(Instant.now().plusMillis(refreshTokenExpiration))
-                    .user(user)
-                    .build();
-            refreshTokenRepository.save(refreshTokenEntity);
+            // refreshTokenRepository.deleteByUserId(user.getId());
+            // RefreshToken refreshTokenEntity = RefreshToken.builder()
+            // .token(refreshToken)
+            // .expiryDate(Instant.now().plusMillis(refreshTokenExpiration))
+            // .user(user)
+            // .build();
+            // refreshTokenRepository.save(refreshTokenEntity);
+            // Lưu refresh token vào Redis
+            redisService.deleteAllByUserId(user.getId()); // Xóa tất cả token cũ
+            RTRedis rtRedis = new RTRedis(refreshToken, Instant.now().plusMillis(refreshTokenExpiration), user.getId());
+            redisService.save(rtRedis);
 
             // Tạo AuthResponse giống như khi đăng nhập thông thường
             AuthResponse authResponse = AuthResponse.builder()

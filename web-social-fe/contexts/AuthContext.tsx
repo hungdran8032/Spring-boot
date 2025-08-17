@@ -74,10 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Logout failed:', error);
     }
-    setUser(null);
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    setUser(null);
   };
 
   const googleLogin = () => {
