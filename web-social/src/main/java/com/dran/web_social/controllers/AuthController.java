@@ -7,7 +7,6 @@ import com.dran.web_social.dto.response.AuthResponse;
 import com.dran.web_social.dto.response.UserResponse;
 import com.dran.web_social.models.User;
 import com.dran.web_social.redis.RedisService;
-import com.dran.web_social.repositories.RefreshTokenRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.AuthService;
 import com.dran.web_social.services.VerificationTokenService;

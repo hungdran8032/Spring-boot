@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { type PostCardProps } from "@/lib/post-service"
 import { type CommentData, commentService } from "@/lib/comment-service"
 import { LikeService } from "@/lib/like-service"
+import { formatTimeAgo } from "@/lib/format-time"
 
 interface PostCommentModalProps {
   post: PostCardProps["post"]
@@ -112,17 +113,11 @@ export default function PostCommentModal({
   const openImageModal = (index: number) => {
     if (post.media && post.media.length > index) {
       setCurrentImageIndex(index)
-      // Note: You may need to handle image modal logic separately if needed
     }
   }
 
-  // Handle comment updates WITHOUT refreshing from server
   const handleCommentUpdate = (delta: number) => {
     handleTotalCommentCountChange(delta)
-    // Remove the automatic refresh to prevent losing local state
-    // if (onRefreshComments) {
-    //   onRefreshComments()
-    // }
   }
 
   return (
@@ -147,7 +142,7 @@ export default function PostCommentModal({
                   <Link href={`/${post.userName}`} className="hover:underline">
                     @{post.userName}
                   </Link>{" "}
-                  · {new Date(post.createAt).toLocaleDateString()}
+                  · {formatTimeAgo(post.createAt)}
                 </p>
               </div>
             </div>
@@ -243,10 +238,13 @@ export default function PostCommentModal({
                   comment={comment}
                   postId={post.id}
                   onCommentCountChange={handleCommentUpdate}
+                  onDelete={(id) => {
+                    setComments((prev) => prev.filter((c) => c.id !== id))
+                  }}
                 />
               ))
             ) : (
-              <p className="text-muted-foreground">Chưa có bình luận nào</p>
+              <p className="text-muted-foreground">Hãy là người đầu tiên bình luận bài viết này</p>
             )}
           </div>
         </div>

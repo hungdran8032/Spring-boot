@@ -99,7 +99,7 @@ public interface PostMapper {
         if (post.getComments() == null) {
             return 0;
         }
-        return post.getComments().size();
+        return (int) post.getComments().stream().filter(c -> c.getDeleted() == false).count();
     }
 
     @Mapping(target = "id", source = "id")

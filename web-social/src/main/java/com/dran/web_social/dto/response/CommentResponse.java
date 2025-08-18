@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,8 +19,8 @@ public class CommentResponse {
     private String content;
     private int likesCount;
     private int repliesCount;
-    private LocalDateTime createAt;
-    private LocalDateTime updateAt;
+    private Date createAt;
+    private Date updateAt;
     private String replyingTo;
 
     // User info

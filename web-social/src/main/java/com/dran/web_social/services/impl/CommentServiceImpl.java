@@ -11,7 +11,6 @@ import com.dran.web_social.repositories.CommentRepository;
 import com.dran.web_social.repositories.PostRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.CommentService;
-import com.dran.web_social.services.WebSocketService;
 import com.dran.web_social.utils.CommentUtil;
 
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,6 @@ public class CommentServiceImpl implements CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentMapper commentMapper;
-    private final WebSocketService webSocketService;
 
     @Override
     @Transactional
@@ -60,11 +58,14 @@ public class CommentServiceImpl implements CommentService {
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Không tìm thấy comment cha với ID: " + request.getParentId()));
 
+            if (parentComment.getDeleted() == true) {
+                throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bình luận này đã bị xóa");
+            }
+
             comment.setParent(parentComment);
 
-            // ✅ Gắn đúng level, giới hạn tối đa là 2
             int newLevel = parentComment.getLevel() + 1;
-            comment.setLevel(Math.min(newLevel, 2)); // Đảm bảo không vượt quá cấp 2
+            comment.setLevel(Math.min(newLevel, 2));
 
             parentComment.setRepliesCount(parentComment.getRepliesCount() + 1);
             commentRepository.save(parentComment);
@@ -75,12 +76,10 @@ public class CommentServiceImpl implements CommentService {
         postRepository.save(post);
 
         CommentResponse response = commentMapper.commentToCommentResponse(savedComment, user.getId());
-        webSocketService.notifyCommentCreated(postId, response, username);
 
         return response;
     }
 
-    // Chỉnh sửa bình luận
     @Override
     @Transactional
     public CommentResponse updateComment(String username, Long commentId, CommentRequest request) {
@@ -93,19 +92,29 @@ public class CommentServiceImpl implements CommentService {
         if (!comment.getUser().getId().equals(user.getId())) {
             throw new AccessDeniedException("Bạn không có quyền sửa comment này");
         }
+        if (comment.getDeleted() == true || isAnyAncestorDeleted(comment)) {
+            throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bình luận này đã bị xóa");
+        }
 
         comment.setContent(request.getContent());
         CommentPost updatedComment = commentRepository.save(comment);
 
         CommentResponse response = commentMapper.commentToCommentResponse(updatedComment, user.getId());
 
-        // Gửi thông báo realtime
-        webSocketService.notifyCommentUpdated(comment.getPost().getId(), response, username);
-
         return response;
     }
 
-    // Xoá bình luận
+    private boolean isAnyAncestorDeleted(CommentPost comment) {
+        CommentPost current = comment.getParent();
+        while (current != null) {
+            if (current.getDeleted() == true) {
+                return true;
+            }
+            current = current.getParent();
+        }
+        return false;
+    }
+
     @Override
     @Transactional
     public void deleteComment(String username, Long commentId) {
@@ -119,36 +128,41 @@ public class CommentServiceImpl implements CommentService {
             throw new AccessDeniedException("Bạn không có quyền xóa comment này");
         }
 
-        Long postId = comment.getPost().getId();
+        if (comment.getDeleted() == true || isAnyAncestorDeleted(comment)) {
+            throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bình luận này đã bị xóa");
+        }
 
         comment.setDeleted(true);
         commentRepository.save(comment);
 
-        // Update parent replies count if this is a reply
         if (comment.getParent() != null) {
             CommentPost parent = comment.getParent();
             parent.setRepliesCount(Math.max(0, parent.getRepliesCount() - 1));
             commentRepository.save(parent);
         }
 
-        // Update post comments count
+        // Post post = comment.getPost();
+        // int deletedCount = countDeletedCommentsRecursively(commentId);
+        int deletedCount = markCommentsDeletedRecursively(comment);
+
+        // Update comment count của post
         Post post = comment.getPost();
-        int deletedCount = countDeletedCommentsRecursively(commentId);
         post.setCommentsCount(Math.max(0, post.getCommentsCount() - deletedCount));
         postRepository.save(post);
-
-        // Gửi thông báo realtime
-        webSocketService.notifyCommentDeleted(postId, commentId, username);
     }
 
-    private int countDeletedCommentsRecursively(Long commentId) {
-        List<CommentPost> allReplies = commentRepository.findAllRepliesByParentId(commentId);
-        int count = 1; // Current comment
+    private int markCommentsDeletedRecursively(CommentPost comment) {
+        int count = 1;
 
-        for (CommentPost reply : allReplies) {
-            count += countDeletedCommentsRecursively(reply.getId());
+        comment.setDeleted(true);
+        commentRepository.save(comment);
+
+        List<CommentPost> replies = commentRepository.findAllRepliesByParentId(comment.getId());
+        for (CommentPost reply : replies) {
+            if (!reply.getDeleted()) {
+                count += markCommentsDeletedRecursively(reply);
+            }
         }
-
         return count;
     }
 
@@ -160,7 +174,7 @@ public class CommentServiceImpl implements CommentService {
         }
 
         Page<CommentPost> topLevelComments = commentRepository.findTopLevelCommentsByPostId(postId, pageable);
-        List<CommentPost> allComments = commentRepository.findByPostId(postId); // Bao gồm cả replies
+        List<CommentPost> allComments = commentRepository.findByPostId(postId);
 
         List<CommentResponse> result = CommentUtil.processCommentsForAPI(
                 topLevelComments.getContent(),
@@ -187,7 +201,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public Page<CommentResponse> getListCommentByPostId(Long postId, Pageable pageable) {
         Page<CommentPost> comments = commentRepository.findTopLevelCommentsByPostId(postId, pageable);
-        List<CommentPost> allReplies = commentRepository.findByPostId(postId); // Lấy tất cả comment của post
+        List<CommentPost> allReplies = commentRepository.findByPostId(postId);
         List<CommentResponse> processed = CommentUtil.processCommentsForAPI(
                 comments.getContent(), allReplies, null, commentMapper);
         return new PageImpl<>(processed, pageable, comments.getTotalElements());

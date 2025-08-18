@@ -10,8 +10,7 @@ import { toast } from "@/components/ui/use-toast"
 import { LikeService } from "@/lib/like-service"
 import { type CommentData, type CommentProps, commentService } from "@/lib/comment-service"
 import { useAuth } from "@/contexts/AuthContext"
-import { formatDistanceToNow } from "date-fns"
-import { vi } from "date-fns/locale"
+import { formatTimeAgo } from "@/lib/format-time"
 
 export default function Comment({
   comment,
@@ -19,8 +18,8 @@ export default function Comment({
   onAddReply,
   postId,
   onCommentCountChange,
-}: CommentProps & { postId?: number | string }) {
-  console.log("Rendering comment:", { id: comment.id, level, replies: comment.replies })
+  onDelete,
+}: CommentProps & { postId?: number | string ,onDelete?: (id: number | string) => void}) {
   const [liked, setLiked] = useState(comment.isLiked ?? false)
   const [likesCount, setLikesCount] = useState(comment.likes)
   const [showReplyInput, setShowReplyInput] = useState(false)
@@ -32,8 +31,9 @@ export default function Comment({
   const [editText, setEditText] = useState(comment.content)
   const [showReplies, setShowReplies] = useState(false)
   const { user } = useAuth()
+  const isOwnerr = user?.userName === comment.user.username 
+  const maxLevel = 3
 
-  // Update replies when comment.replies changes from parent
   useEffect(() => {
     setReplies(comment.replies || [])
   }, [comment.replies])
@@ -61,16 +61,13 @@ export default function Comment({
       setIsLoading(true)
       try {
         const newReply = await commentService.createComment(postId, replyText, comment.id)
-        console.log("New reply:", newReply)
         
-        // Update local state immediately (optimistic update)
         if (level >= 2 && onAddReply) {
           onAddReply(newReply, 1)
         } else {
           setReplies(prevReplies => [...prevReplies, newReply])
         }
         
-        // Always show replies after adding a new one
         setShowReplies(true)
         
         if (onCommentCountChange) {
@@ -103,7 +100,6 @@ export default function Comment({
   const handleNestedReply = (reply: CommentData, targetLevel: number) => {
     if (targetLevel === 1) {
       setReplies(prevReplies => [...prevReplies, reply])
-      // Always show replies when a nested reply is added
       setShowReplies(true)
     } else if (onAddReply) {
       onAddReply(reply, targetLevel)
@@ -115,19 +111,32 @@ export default function Comment({
       return acc + 1 + (c.replies ? countAllReplies(c.replies) : 0)
     }, 0)
   }
-
+  const countCommentTree = (c: CommentData): number => {
+    let count = c.deleted ? 0 : 1
+    if (c.replies && c.replies.length > 0) {
+      for (const reply of c.replies) {
+        count += countCommentTree(reply)
+      }
+    }
+    return count
+  }
   const handleDelete = async () => {
-    if (!comment.isOwner) return
+    if (!isOwnerr) return
     try {
       await commentService.deleteComment(comment.id)
-      comment.deleted = true
-      comment.content = "Bình luận đã bị xóa"
+      const deletedCount = countCommentTree(comment)
+      console.log(deletedCount)
       if (onCommentCountChange) {
-        onCommentCountChange(-1)
+        onCommentCountChange(-deletedCount)
+      }
+      
+      if (onDelete) {
+          onDelete(comment.id)
       }
       toast({
         title: "Thành công",
         description: "Đã xóa bình luận",
+        variant: "destructive",
       })
     } catch (error) {
       toast({
@@ -139,7 +148,7 @@ export default function Comment({
   }
 
   const handleEdit = async () => {
-    if (!comment.isOwner || !editText.trim()) return
+    if (!isOwnerr || !editText.trim()) return
     try {
       const updatedComment = await commentService.updateComment(comment.id, editText)
       comment.content = updatedComment.content
@@ -156,19 +165,6 @@ export default function Comment({
       })
     }
   }
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString)
-      return formatDistanceToNow(date, { addSuffix: true, locale: vi })
-    } catch (error) {
-      return dateString
-    }
-  }
-
-  const maxLevel = 3
-  const isDeepLevel = level >= 2
-
   return (
     <div className={`${level > 0 ? "ml-8 mt-3 " : "mt-4"}`}>
       <div className="flex gap-3">
@@ -182,7 +178,7 @@ export default function Comment({
               <span className="font-medium text-sm">{comment.user.name}</span>
               <span className="text-xs text-muted-foreground">@{comment.user.username}</span>
               <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+              <span className="text-xs text-muted-foreground">{formatTimeAgo(comment.createdAt)}</span>
             </div>
             {isEditing ? (
               <div className="mt-2 flex gap-2">
@@ -218,7 +214,7 @@ export default function Comment({
                 Trả lời
               </Button>
             )}
-            {comment.isOwner && !comment.deleted && (
+            {isOwnerr && !comment.deleted && (
               <>
                 <Button variant="ghost" size="sm" className="h-auto p-1 text-xs" onClick={() => setIsEditing(true)}>
                   <Edit className="h-3 w-3 mr-1" />
@@ -293,6 +289,10 @@ export default function Comment({
                     onAddReply={handleNestedReply}
                     postId={postId}
                     onCommentCountChange={onCommentCountChange}
+                    onDelete={(id) => {
+                      // remove reply khỏi list tại cha
+                      setReplies((prev) => prev.filter((r) => r.id !== id))
+                    }}
                   />
                 ))}
               </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import { api } from "./api-service"
+import { formatTimeAgo } from "./format-time"
 
 export interface CommentData {
   id: number
@@ -25,7 +26,7 @@ export interface CommentProps {
   level?: number
   onAddReply?: (reply: CommentData, targetLevel: number) => void
   postId?: number | string
-  onCommentCountChange?: (delta: number) => void // Thêm prop này
+  onCommentCountChange?: (delta: number) => void 
 }
 
 export const commentService = {
@@ -58,7 +59,6 @@ export const commentService = {
   },
 }
 
-// Helper: Convert CommentResponse (từ backend) thành CommentData (cho FE)
 function toCommentData(response: any): CommentData {
   const isDeleted = response.deleted === true
 
@@ -66,7 +66,7 @@ function toCommentData(response: any): CommentData {
     id: response.id,
     content: isDeleted ? "Bình luận đã bị xoá" : response.content,
     likes: response.likesCount ?? 0,
-    createdAt: response.createAt ?? new Date().toISOString(),
+    createdAt: response.createAt ?? formatTimeAgo(response.createAt),
     replyingTo: response.parentId && !isDeleted ? response.userName : null,
     user: {
       name: isDeleted ? "Người dùng ẩn danh" : (response.userFullName ?? "Không rõ"),
