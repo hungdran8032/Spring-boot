@@ -15,6 +15,7 @@ import com.dran.web_social.custom.exception.ResourceNotFoundException;
 import com.dran.web_social.dto.request.PostRequest;
 import com.dran.web_social.dto.response.PostResponse;
 import com.dran.web_social.mappers.PostMapper;
+import com.dran.web_social.models.CommentPost;
 import com.dran.web_social.models.Media;
 import com.dran.web_social.models.Post;
 import com.dran.web_social.models.User;
@@ -124,6 +125,9 @@ public class PostServiceImpl implements PostService {
         if (!post.getUser().getUsername().equals(user.getUsername())) {
             throw new AccessDeniedException("Bạn không có quyền cập nhật bài viết này");
         }
+        if (post.getDeleted() == true) {
+            throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bài viết này đã bị xóa");
+        }
         if (request.getContent() != null) {
             post.setContent(request.getContent());
         }
@@ -162,6 +166,10 @@ public class PostServiceImpl implements PostService {
             throw new AccessDeniedException("Bạn không có quyền cập nhật bài viết này");
         }
 
+        if (post.getDeleted() == true) {
+            throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bài viết này đã bị xóa");
+        }
+
         // Xóa tất cả media liên quan trên Cloudinary trước
         if (post.getMedia() != null && !post.getMedia().isEmpty()) {
             for (Media media : post.getMedia()) {
@@ -179,8 +187,21 @@ public class PostServiceImpl implements PostService {
             }
         }
         postRepository.deleteMediaByPostId(postId);
-        postRepository.deletePostById(postId);
+        // postRepository.deletePostById(postId);
+        post.setDeleted(true);
+        post.getComments().forEach(c -> markCommentDeleted(c));
+        post.getLikes().forEach(lp -> lp.setLiked(false));
+        postRepository.save(post);
+    }
 
+    private void markCommentDeleted(CommentPost comment) {
+        comment.setDeleted(true);
+
+        // Set isLiked = false cho tất cả like comment
+        comment.getLikes().forEach(lc -> lc.setLiked(false));
+
+        // Đệ quy cho replies
+        comment.getReplies().forEach(this::markCommentDeleted);
     }
 
     private List<Media> uploadMediaFiles(List<MultipartFile> files, Post post) {

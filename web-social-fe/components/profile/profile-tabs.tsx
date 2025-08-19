@@ -8,6 +8,7 @@ import { PostResponse, PostService } from "@/lib/post-service"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import CreatePostModal from "@/components/feed/create-post-modal"
+import { Dialog } from "@radix-ui/react-dialog"
 
 interface ProfileTabsProps {
   username: string
@@ -132,32 +133,7 @@ export default function ProfileTabs({ username }: ProfileTabsProps) {
         </TabsContent>
         
         <TabsContent value="likes" className="space-y-6">
-          {likes.map((post, index) => (
-            <motion.div
-              key={post.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-            >
-              <PostCard post={{
-                id: Number(post.id),
-                content: post.content,
-                userName: post.user.username,
-                userFullName: post.user.name,
-                userAvatar: post.user.avatar,
-                createAt: post.createdAt,
-                updateAt: post.createdAt,
-                media: post.image ? [{
-                  id: 1,
-                  url: post.image,
-                  type: "image"
-                }] : [],
-                isLiked: false,
-                likesCount: post.likes,
-                // commentsCount: post.comments
-              }} />
-            </motion.div>
-          ))}
+              Tính năng hiện đang phát triển
         </TabsContent>
       </Tabs>
 

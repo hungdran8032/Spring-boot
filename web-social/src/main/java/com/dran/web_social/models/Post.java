@@ -19,6 +19,9 @@ public class Post extends BaseEntity {
     private int commentsCount;
     private int sharesCount;
 
+    @Column(name = "deleted", nullable = false)
+    private Boolean deleted = false;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;

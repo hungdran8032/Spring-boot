@@ -47,7 +47,8 @@ export interface PostResponse {
   media: MediaResponse[];
   isLiked: boolean;
   likesCount: number;
-   commentsCount: number
+  commentsCount: number
+  deleted: boolean
 }
 
 export interface PaginatedPosts {

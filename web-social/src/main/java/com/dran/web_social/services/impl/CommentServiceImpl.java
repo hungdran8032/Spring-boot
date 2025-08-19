@@ -44,6 +44,10 @@ public class CommentServiceImpl implements CommentService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài viết với ID: " + postId));
 
+        if (post.getDeleted() == true) {
+            throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bài viết này đã bị xóa");
+        }
+
         CommentPost comment = CommentPost.builder()
                 .content(request.getContent())
                 .post(post)
@@ -96,6 +100,10 @@ public class CommentServiceImpl implements CommentService {
             throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bình luận này đã bị xóa");
         }
 
+        if (comment.getPost().getDeleted() == true) {
+            throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bài viết này đã bị xóa");
+        }
+
         comment.setContent(request.getContent());
         CommentPost updatedComment = commentRepository.save(comment);
 
@@ -126,6 +134,10 @@ public class CommentServiceImpl implements CommentService {
 
         if (!comment.getUser().getId().equals(user.getId())) {
             throw new AccessDeniedException("Bạn không có quyền xóa comment này");
+        }
+
+        if (comment.getPost().getDeleted() == true) {
+            throw new AccessDeniedException("Có chuyện gì đó xảy ra, hình như bài viết này đã bị xóa");
         }
 
         if (comment.getDeleted() == true || isAnyAncestorDeleted(comment)) {

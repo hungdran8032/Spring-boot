@@ -36,7 +36,9 @@ export default function PostCard({ post, onDeletePost, onUpdatePost }: PostCardP
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0)
-
+  if (post.deleted) {
+    return null
+  }
   // Create stable dependencies for useEffect
   const postDependencies = useMemo(
     () => ({
