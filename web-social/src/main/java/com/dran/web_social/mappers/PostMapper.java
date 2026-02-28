@@ -23,6 +23,7 @@ public interface PostMapper {
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "likes", ignore = true)
     @Mapping(target = "comments", ignore = true)
+    @Mapping(target = "deleted", constant = "false")
     Post postRequestToPost(PostRequest request);
 
     @Mapping(target = "userName", source = "post.user.username")

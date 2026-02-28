@@ -74,7 +74,6 @@ public class UserServiceImpl implements UserService {
         String currentUsername = authentication.getName(); // lấy username từ token
         User user = userRepository.findByUserName(currentUsername)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng có tài khoản: " + currentUsername));
-        // Get current user
 
         // Update user basic information
         if (req.getEmail() != null && !req.getEmail().equals(user.getEmail())) {
@@ -125,16 +124,7 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        // if (req.getUserName() != null) {
-        // if (userRepository.existsByUserName(req.getUserName())) {
-        // throw new RuntimeException("Tên người dùng này đã tồn tại");
-        // }
-        // user.setUserName(req.getUserName());
-        // }
-
-        // Save updated user
         User updatedUser = userRepository.save(user);
-        log.info("User profile updated successfully: {}", updatedUser.getUsername());
 
         return userMapper.userToUserResponse(updatedUser);
     }

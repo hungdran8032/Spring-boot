@@ -50,8 +50,10 @@ public class ProfileController {
 
     @GetMapping("/{username}")
     public ResponseEntity<ProfileResponse> getUserProfileByUsername(
+            @AuthenticationPrincipal User currentUser,
             @PathVariable String username) {
-        return ResponseEntity.ok(profileService.getProfile(username));
+        String currentUsername = (currentUser != null) ? currentUser.getUsername() : null;
+        return ResponseEntity.ok(profileService.getProfile(username, currentUsername));
     }
 
 }

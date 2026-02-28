@@ -48,6 +48,7 @@ public class SecurityConfig {
             "/ws/**",
             "/topic/**",
             "/queue/**",
+            "/api/v1/friend"
     };
 
     private final String[] BLACK_LIST = {

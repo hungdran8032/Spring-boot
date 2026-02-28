@@ -15,6 +15,7 @@ import com.dran.web_social.repositories.ProfileRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.ProfileService;
 import com.dran.web_social.services.CloudService;
+import com.dran.web_social.services.FriendShipService;
 import com.dran.web_social.mappers.UserMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserMapper userMapper;
     private final CloudService cloudService;
     private final UserRepository userRepository;
+    private final FriendShipService friendShipService;
 
     @Override
     public ProfileResponse updateProfile(UpdateProfileRequest request) {
@@ -92,6 +94,50 @@ public class ProfileServiceImpl implements ProfileService {
         User user = userRepository.findByUserName(username)
                 .orElseThrow(
                         () -> new RuntimeException("Không tìm thấy người dùng có tài khoản: " + username));
+        Profile profile = user.getProfile();
+        if (profile == null) {
+            // throw new RuntimeException("Profile không tồn tại");
+            profile = new Profile();
+            profile.setUser(user); // gắn ngược lại user
+            profile.setBio("");
+            profile.setBanner(null);
+            profile.setWebsite(null);
+            profile.setLocation(null);
+            profile.setFollowersCount(0);
+            profile.setFollowingCount(0);
+            profile.setPostsCount(0);
+
+            // Lưu profile
+            profile = profileRepository.save(profile);
+
+            // gắn vào user (nếu user có mappedBy profile)
+            user.setProfile(profile);
+            userRepository.save(user);
+        }
+
+        return ProfileResponse.builder()
+                .bio(profile.getBio())
+                .banner(profile.getBanner())
+                .website(profile.getWebsite())
+                .location(profile.getLocation())
+                .followersCount(profile.getFollowersCount())
+                .followingCount(profile.getFollowingCount())
+                .postsCount(profile.getPostsCount())
+                .user(userMapper.userToUserResponse(user))
+                .build();
+    }
+
+    @Override
+    public ProfileResponse getProfile(String username, String currentUsername) {
+        User user = userRepository.findByUserName(username)
+                .orElseThrow(
+                        () -> new RuntimeException("Không tìm thấy người dùng có tài khoản: " + username));
+
+        Long currentUserId = userRepository.findByUserName(currentUsername)
+                .map(User::getId)
+                .orElse(null);
+
+        friendShipService.checkIfUsersAreBlocked(currentUserId, user.getId());
         Profile profile = user.getProfile();
         if (profile == null) {
             // throw new RuntimeException("Profile không tồn tại");

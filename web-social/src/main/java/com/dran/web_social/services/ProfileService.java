@@ -6,5 +6,7 @@ import com.dran.web_social.dto.response.ProfileResponse;
 public interface ProfileService {
     ProfileResponse updateProfile(UpdateProfileRequest request);
 
+    ProfileResponse getProfile(String username, String currentUsername);
+
     ProfileResponse getProfile(String username);
 }

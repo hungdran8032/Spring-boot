@@ -23,6 +23,7 @@ import com.dran.web_social.repositories.MediaRepository;
 import com.dran.web_social.repositories.PostRepository;
 import com.dran.web_social.repositories.UserRepository;
 import com.dran.web_social.services.CloudService;
+import com.dran.web_social.services.FriendShipService;
 import com.dran.web_social.services.LikeService;
 import com.dran.web_social.services.MediaService;
 import com.dran.web_social.services.PostService;
@@ -44,6 +45,7 @@ public class PostServiceImpl implements PostService {
     private final MediaService mediaService;
     private final LikeService likeService;
     private final UserService userService;
+    private final FriendShipService friendShipService;
 
     @Override
     @Transactional
@@ -109,7 +111,11 @@ public class PostServiceImpl implements PostService {
     public Page<PostResponse> getPostsByUserWithLikeStatus(String username, Pageable pageable, String currentUsername) {
         User user = userRepository.findByUserName(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với tên: " + username));
+        Long currentUserId = userRepository.findByUserName(currentUsername)
+                .map(User::getId)
+                .orElse(null);
 
+        friendShipService.checkIfUsersAreBlocked(currentUserId, user.getId());
         Page<Post> posts = postRepository.findByUserId(user.getId(), pageable);
         return posts.map(
                 post -> postMapper.postToPostResponseWithLikeStatus(post, currentUsername, likeService, userService));
