@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'; // eslint-disable-line no-unused-vars, no-unused-vars
 
-export const API_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9000/api/v1'; // Chỉnh sửa: thêm biến môi trường
+export const API_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9999/api/v1'; // Chỉnh sửa: thêm biến môi trường
 
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
